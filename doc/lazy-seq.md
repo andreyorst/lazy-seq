@@ -1,4 +1,5 @@
-# Init.fnl (v0.0.1)
+# Lazy-seq.fnl (v0.0.1)
+Lazy sequence library for Fennel and Lua.
 
 **Table of contents**
 

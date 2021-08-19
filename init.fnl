@@ -149,11 +149,14 @@ Take 10 element from a sequential table
          _ nil)
        nil)))
 
-{: take
- : range
- : concat
- : map
- : seq
- : cons
- : first
- : rest}
+(setmetatable
+ {: take
+  : range
+  : concat
+  : map
+  : seq
+  : cons
+  : first
+  : rest}
+ {:__index {:_DESCRIPTION "Lazy sequence library for Fennel and Lua."
+            :_MODULE_NAME "lazy-seq.fnl"}})

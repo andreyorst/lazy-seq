@@ -78,13 +78,13 @@ Lazy sequences can be self-referencing:
 
 ## Documentation
 
-The documentation is auto-generated with [Fenneldoc](https://gitlab.com/andreyorst/fenneldoc) and can be found [here](https://gitlab.com/andreyorst/lazy-seq/-/blob/main/doc/src/lazy-seq.md).
+The documentation is auto-generated with [Fenneldoc](https://gitlab.com/andreyorst/fenneldoc) and can be found [here](https://gitlab.com/andreyorst/lazy-seq/-/blob/main/doc/lazy-seq.md).
 
 ## Contributing
 
 Please do.
 You can report issues or feature request at [project's GitLab repository](https://gitlab.com/andreyorst/lazy-seq).
-Consider reading [contribution guidelines](https://gitlab.com/andreyorst/lazy-seq/-/blob/master/CONTRIBUTING.md) beforehand.
+Consider reading [contribution guidelines](https://gitlab.com/andreyorst/lazy-seq/-/blob/main/CONTRIBUTING.md) beforehand.
 
 <!--  LocalWords:
       LocalWords:  GitLab submodule stateful runtime Fenneldoc

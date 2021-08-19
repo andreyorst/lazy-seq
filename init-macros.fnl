@@ -32,5 +32,8 @@
      (concat# ,(unpack (icollect [_ s (ipairs [...])]
                          `(lazy-seq ,s))))))
 
-{: lazy-seq
- : lazy-cat}
+(setmetatable
+ {: lazy-seq
+  : lazy-cat}
+ {:__index {:_DESCRIPTION "Macros for creating lazy sequences."
+            :_MODULE_NAME "macros.fnl"}})
