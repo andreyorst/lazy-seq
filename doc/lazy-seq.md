@@ -16,7 +16,7 @@ Lazy sequence library for Fennel and Lua.
 Function signature:
 
 ```
-(seq vec)
+(seq t)
 ```
 
 Construct an eager sequence out of a table or another sequence.

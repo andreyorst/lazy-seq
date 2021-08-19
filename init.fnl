@@ -37,8 +37,10 @@ If the sequence is empty, returns empty sequence"
       (tset (length lines) (.. (. lines (length lines)) ")")))))
 
 (local empty-cons (let [e []]
-                    (setmetatable e {:__fennelview #"()"
+                    (setmetatable e {:__len 0
+                                     :__fennelview #"()"
                                      :__type :empty-cons
+                                     :__pairs #(values next [] nil)
                                      :__call #(if $2 nil e)})))
 
 (var seq nil)                   ; forward declaration for seq function
@@ -56,20 +58,24 @@ Second element must be either a table or a sequence, or nil."
             "expected nil or cons as a tail")
     (setmetatable [] {:__call #(if $2 h (match (seq t) s s nil empty-cons))
                       :__type :cons
+                      ;; TODO: add ways to iterate and compute length
                       :__fennelview pp-seq})))
 
-(set seq (fn [vec]
+(set seq (fn [t]
            "Construct an eager sequence out of a table or another sequence.
 Returns `nil` if given empty table, or sequence."
-           (let [t (gettype vec)]
-             (if (or (= :cons t) (= :lazy-cons t))
-                 vec
-                 (do (var res nil)
-                     (when (not= nil vec)
-                       (for [i (length vec) 1 -1]
-                         (set res (cons (. vec i) res))))
-                     res)))))
+           (match (gettype t)
+             :cons t
+             :lazy-cons t
+             :table (do (var res nil)
+                        (for [i (length t) 1 -1]
+                          (set res (cons (. t i) res)))
+                        res)
+             _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
+;;; Sequence generation
+
+;; TODO: make `concat` accept arbitrary amount of collections
 (fn concat [x y]
   "Return a lazy sequence of concatenated sequences."
   (lazy-seq
@@ -77,6 +83,7 @@ Returns `nil` if given empty table, or sequence."
      s (cons (first s) (concat (rest s) y))
      nil (seq y))))
 
+;; TODO: make `map` accept arbitrary amount of collections
 (fn map [f col]
   "Map function `f` over every element of a collection `col`.
 Returns lazy sequence.
@@ -91,6 +98,31 @@ Returns lazy sequence.
    (match (seq col)
      x (cons (f (first x)) (map f (rest x)))
      _ nil)))
+
+(fn take [n coll]
+  "Take `n` elements from the collection `coll`.
+Returns a lazy sequence of specified amount of elements.
+
+# Examples
+
+Take 10 element from a sequential table
+
+```fennel
+(take 10 [1 2 3]) ;=> @seq(1 2 3)
+(take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
+```"
+  (lazy-seq
+   (if (> n 0)
+       (match (seq coll)
+         s (cons (first s) (take (- n 1) (rest s)))
+         _ nil)
+       nil)))
+
+;; TODO: add `drop`
+;; TODO: add `filter`
+;; TODO: add `keep`
+
+;;; Range
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
@@ -129,25 +161,6 @@ Various ranges:
     2 (let [(x end) ...]
         (fix-range x end 1))
     _ (fix-range ...)))
-
-(fn take [n coll]
-  "Take `n` elements from the collection `coll`.
-Returns a lazy sequence of specified amount of elements.
-
-# Examples
-
-Take 10 element from a sequential table
-
-```fennel
-(take 10 [1 2 3]) ;=> @seq(1 2 3)
-(take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
-```"
-  (lazy-seq
-   (if (> n 0)
-       (match (seq coll)
-         s (cons (first s) (take (- n 1) (rest s)))
-         _ nil)
-       nil)))
 
 (setmetatable
  {: take
