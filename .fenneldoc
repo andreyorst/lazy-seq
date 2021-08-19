@@ -1,0 +1,30 @@
+;; -*- mode: fennel; -*- vi:ft=fennel
+;; Configuration file for Fenneldoc v0.1.6
+;; https://gitlab.com/andreyorst/fenneldoc
+
+{:fennel-path {}
+ :function-signatures true
+ :ignored-args-patterns ["%.%.%." "%_" "x" "y" "vec" "c"]
+ :inline-references "link"
+ :insert-comment true
+ :insert-copyright true
+ :insert-license true
+ :insert-version true
+ :keys {:copyright "_COPYRIGHT"
+        :description "_DESCRIPTION"
+        :doc-order "_DOC_ORDER"
+        :license "_LICENSE"
+        :module-name "_MODULE_NAME"
+        :version "_VERSION"}
+ :mode "checkdoc"
+ :order "alphabetic"
+ :project-copyright "Copyright (C) 2021 Andrey Listopadov"
+ :project-license "[MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)"
+ :project-version "v0.0.1"
+ :project-doc-order {:init.fnl ["seq" "cons" "first" "rest" "map" "concat" "range"]
+                     :init-macros.fnl ["lazy-seq" "lazy-cat"]}
+ :out-dir "./doc"
+ :sandbox true
+ :test-requirements {:init.fnl "(require-macros :fennel-test.test)
+                                (require-macros :init-macros)"}
+ :toc true}
