@@ -4,7 +4,7 @@
 
 {:fennel-path {}
  :function-signatures true
- :ignored-args-patterns ["%.%.%." "%_" "x" "y" "vec" "c"]
+ :ignored-args-patterns ["%.%.%." "%_" "c" "s"]
  :inline-references "link"
  :insert-comment true
  :insert-copyright true
@@ -25,6 +25,5 @@
                      :init-macros.fnl ["lazy-seq" "lazy-cat"]}
  :out-dir "./doc"
  :sandbox true
- :test-requirements {:init.fnl "(require-macros :fennel-test.test)
-                                (require-macros :init-macros)"}
+ :test-requirements {:init.fnl "(require-macros :fennel-test.test)"}
  :toc true}
