@@ -4,27 +4,13 @@
       (or ... :init)))
 
 (fn lazy-seq [...]
-  "Return a lazy sequence, that lazily evaluates the body, and returns a sequence."
-  `(let [{:seq seq#} (require ,lseq)
-         gettype# #(match (?. (getmetatable $) :__type)
-                     t# t#
-                     ,(sym :_) (type $))
-         proxy# []
-         realize# (fn []
-                    (let [s# (seq# (do ,...))]
-                      (if (not= nil s#)
-                          (setmetatable proxy# {:__call #(s# $2)
-                                                :__type :cons
-                                                :__fennelview (. (getmetatable s#) :__fennelview)
-                                                :__index {:realized? true}})
-                          (setmetatable proxy# {:__call #(if $2 nil proxy#)
-                                                :__fennelview #"()"
-                                                :__type :empty-cons
-                                                :__index {:realized? true}}))))]
-     (setmetatable proxy# {:__call #((realize#) $2)
-                           :__index {:realized? false}
-                           :__fennelview #((. (getmetatable (realize#)) :__fennelview) $...)
-                           :__type :lazy-cons})))
+  "Create lazy sequence from the result provided by running the body.
+Delays the execution until the resulting sequence is consumed.
+
+Same as `lazy-seq*`, but doesn't require wrapping the body into an
+anonymous function."
+  `(let [{:lazy-seq* lazy-seq#} (require ,lseq)]
+     (lazy-seq# (fn [] ,...))))
 
 (fn lazy-cat [...]
   "Concatenate arbitrary amount of lazy sequences."

@@ -1,6 +1,3 @@
-(import-macros
- {: lazy-seq}
- (if (= ... :init) :init-macros (or ... :init-macros)))
 
 (fn first [c]
   "Return first element of a sequence."
@@ -73,6 +70,25 @@ Returns `nil` if given empty table, or sequence."
                         res)
              _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
+(fn lazy-seq [f]
+  "Create lazy sequence from the result of function `f`.
+Delays execution of `f` until sequence is consumed.
+
+See `lazy-seq` macro from init-macros.fnl for more convenient usage."
+  (let [lazy-cons (cons nil nil)
+        realize (fn []
+                  (let [s (seq (f))]
+                    (if (not= nil s)
+                        (setmetatable lazy-cons (getmetatable s))
+                        (setmetatable lazy-cons (getmetatable empty-cons)))))]
+    (setmetatable lazy-cons {:__call #((realize) $2)
+                             :__fennelview #((. (getmetatable (realize)) :__fennelview) $...)
+                             :__len #(length (realize))
+                             :__pairs #(pairs (realize))
+                             :__name "lazy cons"
+                             :__lazy-seq/type :lazy-cons})))
+
+
 ;;; Sequence generation
 
 ;; TODO: make `concat` accept arbitrary amount of collections
@@ -126,13 +142,13 @@ Take 10 element from a sequential table
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
-  (lazy-seq (cons x (inf-range (+ x step) step))))
+  (lazy-seq #(cons x (inf-range (+ x step) step))))
 
 (fn fix-range [x end step]
   ;; fixed lazy range builder
   (if (or (and (>= step 0) (< x end))
           (and (< step 0) (> x end)))
-      (lazy-seq (cons x (fix-range (+ x step) end step)))
+      (lazy-seq #(cons x (fix-range (+ x step) end step)))
       nil))
 
 (fn range [...]
@@ -168,6 +184,7 @@ Various ranges:
   : concat
   : map
   : seq
+  :lazy-seq* lazy-seq
   : cons
   : first
   : rest}
