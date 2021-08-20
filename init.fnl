@@ -128,6 +128,26 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__lazy-seq/type :lazy-cons})))
 
 
+(fn every [pred coll]
+  "Check if `pred` is true for every element of a sequence `coll`."
+  (match (seq coll)
+    s (if (pred (first s))
+          (match (next* s)
+            r (every pred r)
+            _ true)
+          false)
+    _ false))
+
+(fn any [pred coll]
+  "Check if `pred` is true for any element of a sequence `coll`."
+  (match (seq coll)
+    s (if (pred (first s))
+          true
+          (match (next* s)
+            r (any pred r)
+            _ false))
+    _ false))
+
 ;;; Sequence generation
 
 (fn concat [...]
@@ -141,7 +161,6 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
           nil y))
     _ (concat (concat (pick-values 2 ...)) (select 3 ...))))
 
-;; TODO: make `map` accept arbitrary amount of collections
 (fn map [f ...]
   "Map function `f` over every element of a collection `col`.
 Returns lazy sequence.
@@ -160,7 +179,37 @@ Returns lazy sequence.
     2 (let [(s1 s2) ...
             s1 (seq s1) s2 (seq s2)]
         (if (and s1 s2)
-            nil nil))))
+            (lazy-seq #(cons (f (first s1) (first s2)) (map f (rest s1) (rest s2))))
+            nil))
+    3 (let [(s1 s2 s3) ...
+            s1 (seq s1) s2 (seq s2) s3 (seq s3)]
+        (if (and s1 s2 s3)
+            (lazy-seq #(cons (f (first s1) (first s2) (first s3))
+                             (map f (rest s1) (rest s2) (rest s3))))
+            nil))
+    _ (let [n (select "#" ...)
+            colls (doto [...] (tset :n n))
+            ss []
+            unpack #((or table.unpack _G.unpack) $ 1 $.n)]
+        (var ss nil)
+        (for [i n 1 -1]
+          (set ss (cons (seq (. colls i)) ss)))
+        (if (every #(not= nil $) ss)
+            (let [fs (map first ss)
+                  rs (map rest ss)
+                  tf {: n}
+                  tr {: n}]
+              (var i 1)
+              (each [_ s (pairs fs)]
+                (tset tf i s)
+                (set i (+ i 1)))
+              (set i 1)
+              (each [_ s (pairs rs)]
+                (tset tr i s)
+                (set i (+ i 1)))
+              (lazy-seq #(cons (f (unpack tf))
+                               (map f (unpack tr)))))
+            nil))))
 
 (fn take [n coll]
   "Take `n` elements from the collection `coll`.
