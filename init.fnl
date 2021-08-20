@@ -73,7 +73,7 @@ Second element must be either a table or a sequence, or nil."
   (assert (= 2 (select "#" ...)) "expected two arguments for cons")
   (let [(h t) ...]
     (assert (. allowed-types (gettype t))
-            "expected nil or cons as a tail")
+            "expected nil, cons or table as a tail")
     (setmetatable [] {:__call #(if $2 h (match (seq t) s s nil empty-cons))
                       :__lazy-seq/type :cons
                       :__len #(do (var (s len) (values $ 0))
@@ -81,9 +81,12 @@ Second element must be either a table or a sequence, or nil."
                                     (set (s len) (values (next* s) (+ len 1))))
                                   len)
                       :__pairs #(values (fn [_ s]
-                                          (let [tail (next* s)]
-                                            (match (gettype tail)
-                                              :cons (values tail (first s)))))
+                                          (if (not= empty-cons s)
+                                              (let [tail (next* s)]
+                                                (match (gettype tail)
+                                                  :cons (values tail (first s))
+                                                  _ (values empty-cons (first s))))
+                                              nil))
                                         nil $)
                       :__name "cons"
                       :__fennelview pp-seq})))
