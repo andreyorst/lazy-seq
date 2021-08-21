@@ -9,7 +9,7 @@
 (local empty-cons
   (let [e []]
     (setmetatable e {:__len #0
-                     :__fennelview #"()"
+                     :__fennelview #"@seq()"
                      :__lazy-seq/type :empty-cons
                      :__newindex #nil
                      :__name "cons"
