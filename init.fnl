@@ -97,7 +97,7 @@ value of `n` key from such table.  Returns `nil` if given empty table,
 or empty sequence."
        (match (gettype t)
          :cons t
-         :lazy-cons (realize t)
+         :lazy-cons (seq (realize t))
          :empty-cons nil
          :nil nil
          ;; TODO: think thru how to support associative data
