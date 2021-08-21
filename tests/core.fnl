@@ -45,14 +45,14 @@
         (dorun s)
         (assert-eq [1 2 3] se)))
     (testing "map length"
-             (assert-eq 3 (length (map #nil [1 2 3]))))
+      (assert-eq 3 (length (map #nil [1 2 3]))))
     (testing "map accepts arbitrary amount of collections"
-             (let [->vec #(icollect [_ x (pairs $)] x)]
-               (assert-eq (->vec (map #[$...] [:a]))
-                          [[:a]])
-               (assert-eq (->vec (map #[$...] [:a] [:b]))
-                          [[:a :b]])
-               (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f]))
-                          [[:a :b :c] [:d :e :f]])
-               (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f] [:x :y :z]))
-                          [[:a :b :c :x] [:d :e :f :y]])))))
+      (let [->vec #(icollect [_ x (pairs $)] x)]
+        (assert-eq (->vec (map #[$...] [:a]))
+                   [[:a]])
+        (assert-eq (->vec (map #[$...] [:a] [:b]))
+                   [[:a :b]])
+        (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f]))
+                   [[:a :b :c] [:d :e :f]])
+        (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f] [:x :y :z]))
+                   [[:a :b :c :x] [:d :e :f :y]])))))

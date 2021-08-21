@@ -6,18 +6,14 @@
     s* (s* true)
     _ nil))
 
-(local zero-len #0)
-(local nilindex #nil)
-(local empty-cons-pp #"()")
-(local empty-next #(values next [] nil))
 (local empty-cons
   (let [e []]
-    (setmetatable e {:__len zero-len
-                     :__fennelview empty-cons-pp
+    (setmetatable e {:__len #0
+                     :__fennelview #"()"
                      :__lazy-seq/type :empty-cons
-                     :__newindex nilindex
+                     :__newindex #nil
                      :__name "cons"
-                     :__pairs empty-next
+                     :__pairs #(values next [] nil)
                      :__call #(if $2 nil e)})))
 
 (fn rest [s]
@@ -92,9 +88,13 @@ Second element must be either a table or a sequence, or nil."
                       :__fennelview pp-seq})))
 
 (set seq
-     (fn [t]
-       "Construct an eager sequence out of a table or another sequence.
-Returns `nil` if given empty table, or sequence."
+     (fn [t size]
+       "Construct a sequence out of a table or another sequence `t`.
+Takes optional `size` argument for defining the length of the
+resulting sequence.  Since sequences can contain `nil` values,
+transforming packed table to a sequence is possible by passing the
+value of `n` key from such table.  Returns `nil` if given empty table,
+or empty sequence."
        (match (gettype t)
          :cons t
          :lazy-cons t
@@ -104,7 +104,7 @@ Returns `nil` if given empty table, or sequence."
          ;;       structures and user-defined table-based data
          ;;       structures
          :table (do (var res nil)
-                    (for [i (length t) 1 -1]
+                    (for [i (or size (length t)) 1 -1]
                       (set res (cons (. t i) res)))
                     res)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
@@ -148,7 +148,19 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
             _ false))
     _ false))
 
-;;; Sequence generation
+
+(fn seq-pack [s]
+  (let [res []]
+    (var n 0)
+    (each [_ v (pairs (seq s))]
+      (set n (+ n 1))
+      (tset res n v))
+    (doto res (tset :n n))))
+
+(local unpack (or table.unpack _G.unpack))
+(fn seq-unpack [s]
+  (let [t (seq-pack s)]
+    (unpack t 1 t.n)))
 
 (fn concat [...]
   "Return a lazy sequence of concatenated sequences."
@@ -172,6 +184,7 @@ Returns lazy sequence.
 (local res (map #(+ $ 1) [:a :b :c])) ;; will blow up when realized
 ```"
   (match (select "#" ...)
+    0 nil
     1 (let [(col) ...]
         (match (seq col)
           x (lazy-seq #(cons (f (first x)) (map f (seq (rest x)))))
@@ -187,28 +200,10 @@ Returns lazy sequence.
             (lazy-seq #(cons (f (first s1) (first s2) (first s3))
                              (map f (rest s1) (rest s2) (rest s3))))
             nil))
-    _ (let [n (select "#" ...)
-            colls (doto [...] (tset :n n))
-            ss []
-            unpack #((or table.unpack _G.unpack) $ 1 $.n)]
-        (var ss nil)
-        (for [i n 1 -1]
-          (set ss (cons (seq (. colls i)) ss)))
-        (if (every #(not= nil $) ss)
-            (let [fs (map first ss)
-                  rs (map rest ss)
-                  tf {: n}
-                  tr {: n}]
-              (var i 1)
-              (each [_ s (pairs fs)]
-                (tset tf i s)
-                (set i (+ i 1)))
-              (set i 1)
-              (each [_ s (pairs rs)]
-                (tset tr i s)
-                (set i (+ i 1)))
-              (lazy-seq #(cons (f (unpack tf))
-                               (map f (unpack tr)))))
+    _ (let [s (seq [...] (select "#" ...))]
+        (if (every #(not= nil (seq $)) s)
+            (lazy-seq #(cons (f (seq-unpack (map first s)))
+                             (map f (seq-unpack (map rest s)))))
             nil))))
 
 (fn take [n coll]
@@ -298,7 +293,7 @@ Various ranges:
         (fix-range x end 1))
     _ (fix-range ...)))
 
-;; utils
+;;; Utils
 
 (fn realized? [s]
   "Check if sequence is fully realized.
