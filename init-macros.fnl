@@ -14,9 +14,9 @@ anonymous function."
 
 (fn lazy-cat [...]
   "Concatenate arbitrary amount of lazy sequences."
-  `(let [{:concat concat#} (require ,lseq)]
+  `(let [{:concat concat# :lazy-seq* lazy-seq#} (require ,lseq)]
      (concat# ,(unpack (icollect [_ s (ipairs [...])]
-                         `(lazy-seq ,s))))))
+                         `(lazy-seq# (fn [] ,s)))))))
 
 (setmetatable
  {: lazy-seq
