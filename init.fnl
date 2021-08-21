@@ -127,29 +127,28 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__name "lazy cons"
                              :__lazy-seq/type :lazy-cons})))
 
-
-(fn every [pred coll]
+(fn every? [pred coll]
   "Check if `pred` is true for every element of a sequence `coll`."
   (match (seq coll)
     s (if (pred (first s))
           (match (next* s)
-            r (every pred r)
+            r (every? pred r)
             _ true)
           false)
     _ false))
 
-(fn any [pred coll]
-  "Check if `pred` is true for any element of a sequence `coll`."
+(fn some? [pred coll]
+  "Check if `pred` returns logical true for any element of a sequence
+`coll`."
   (match (seq coll)
-    s (if (pred (first s))
-          true
+    s (or (pred (first s))
           (match (next* s)
-            r (any pred r)
-            _ false))
-    _ false))
-
+            r (some? pred r)
+            _ nil))
+    _ nil))
 
 (fn seq-pack [s]
+  "Pack sequence into sequential table with size indication."
   (let [res []]
     (var n 0)
     (each [_ v (pairs (seq s))]
@@ -159,6 +158,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 
 (local unpack (or table.unpack _G.unpack))
 (fn seq-unpack [s]
+  "Unpack sequence items to multiple values."
   (let [t (seq-pack s)]
     (unpack t 1 t.n)))
 
@@ -238,10 +238,11 @@ remaining elements."
 returns logical true."
   (lazy-seq
    #(match (seq coll)
-      s (let [x (first s)]
+      s (let [x (first s) r (rest s)]
           (if (pred x)
-              (cons x (filter pred (rest s)))
-              (filter pred (rest s)))))))
+              (cons x (filter pred r))
+              (filter pred r)))
+      _ nil)))
 
 (fn keep [f coll]
   "Returns a lazy sequence of the non-nil results of calling `f` on the
@@ -334,6 +335,10 @@ infinite sequences."
   : doall
   : dorun
   : realized?
+  : every?
+  : some?
+  : seq-pack
+  : seq-unpack
   : cons
   : first
   : rest

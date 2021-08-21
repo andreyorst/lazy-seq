@@ -6,12 +6,11 @@
     (testing "cons arity"
       (assert-not (pcall cons))
       (assert-not (pcall cons nil)))
-    (testing "cons expects table or seq"
+    (testing "cons expects table, nil or seq"
       (assert-not (pcall cons 1 2))
       (assert-is (cons 1 nil))
       (assert-is (cons 1 []))
-      (assert-is (cons 1 (cons nil nil)))))
-  )
+      (assert-is (cons 1 (cons nil nil))))))
 
 (deftest "sequences"
   (let [{:lazy-seq* lazy-seq
@@ -59,3 +58,24 @@
                    [[:a :b :c] [:d :e :f]])
         (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f] [:x :y :z]))
                    [[:a :b :c :x] [:d :e :f :y]])))))
+
+(deftest "seq packing/unpacking"
+  (let [{: seq : seq-pack : seq-unpack} suit]
+    (testing "packing seq"
+      (assert-eq (seq-pack (seq [1 2 3]))
+                 {1 1 2 2 3 3 :n 3})
+      (assert-eq (seq-pack (seq [] 10))
+                 {:n 10}))
+    (testing "unpacking seq"
+      (assert-eq 10 (select "#" (seq-unpack (seq [] 10))))
+      (assert-eq [1 2 3] [(seq-unpack (seq [1 2 3]))]))))
+
+(deftest "filter"
+  (let [{: filter} suit
+        ->vec #(icollect [_ x (pairs $)] x)]
+    (testing "filter is lazy"
+      (let [se []
+            res (filter #(do (table.insert se $) (> $ 0)) [1 -1 2 -2 3 -3])]
+        (assert-eq se [])
+        (assert-eq [1 2 3] (->vec res))
+        (assert-eq se [1 -1 2 -2 3 -3])))))
