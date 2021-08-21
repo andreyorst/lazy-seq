@@ -165,12 +165,13 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 (fn concat [...]
   "Return a lazy sequence of concatenated sequences."
   (match (select "#" ...)
-    0 nil
-    1 (seq ...)
+    0 (lazy-seq #nil)
+    1 (let [(x) ...]
+        (lazy-seq #x))
     2 (let [(x y) ...]
-        (match (seq x)
-          s (lazy-seq #(cons (first s) (concat (rest s) y)))
-          nil y))
+        (lazy-seq #(match (seq x)
+                     s (cons (first s) (concat (rest s) y))
+                     nil y)))
     _ (concat (concat (pick-values 2 ...)) (select 3 ...))))
 
 (fn map [f ...]

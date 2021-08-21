@@ -88,3 +88,41 @@
       (assert-eq [] (->vec (filter #(< $ 0) [1 2 3])))
       (assert-eq nil (seq (filter #(< $ 0) [1 2 3])))
       (assert-eq [1 2 3] (->vec (filter #(> $ 0) [-1 1 2 -2 -3 -3 -3 -3 3]))))))
+
+(deftest "keep"
+  (let [{: keep : take : range} suit]
+    (testing "keep is lazy"
+      (let [se []
+            res (keep #(do (table.insert se $) (if (> $ 0) $ nil))
+                      [1 -1 2 -2 3 -3])]
+        (assert-eq se [])
+        (assert-eq [1 2 3] (->vec res))
+        (assert-eq se [1 -1 2 -2 3 -3])
+        (assert-eq [true false true false true]
+                   (->vec (take 5 (keep #(= 0 (% $ 2)) (range)))))))))
+
+(deftest "concat"
+  (let [{: concat :lazy-seq* lazy-seq : range : take} suit]
+    (testing "concat is lazy"
+      (let [se []
+            c1 (concat (lazy-seq #(do (table.insert se 1) [1])))
+            c2 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2])))
+            c3 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2]))
+                       (lazy-seq #(do (table.insert se 3) [3])))
+            c4 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2]))
+                       (lazy-seq #(do (table.insert se 3) [3]))
+                       (lazy-seq #(do (table.insert se 4) [4])))]
+        (assert-eq se [])
+        (assert-eq [1] (->vec c1))
+        (assert-eq se [1])
+        (assert-eq [1 2] (->vec c2))
+        (assert-eq se [1 1 2])
+        (assert-eq [1 2 3] (->vec c3))
+        (assert-eq se [1 1 2 1 2 3])
+        (assert-eq [1 2 3 4] (->vec c4))
+        (assert-eq se [1 1 2 1 2 3 1 2 3 4])
+        (assert-eq [-1 0 1 2 3]
+                   (->vec (take 5 (concat [-1] (range)))))))))
