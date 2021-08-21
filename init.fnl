@@ -31,7 +31,7 @@ If the sequence is empty, returns empty sequence."
 
 (fn realize [c]
   ;; force realize single cons cell
-  (doto c (first)))
+  (doto c (c)))
 
 (fn next* [s]
   "Return the tail of a sequence.
@@ -97,7 +97,7 @@ value of `n` key from such table.  Returns `nil` if given empty table,
 or empty sequence."
        (match (gettype t)
          :cons t
-         :lazy-cons t
+         :lazy-cons (realize t)
          :empty-cons nil
          :nil nil
          ;; TODO: think thru how to support associative data
@@ -186,25 +186,25 @@ Returns lazy sequence.
   (match (select "#" ...)
     0 nil
     1 (let [(col) ...]
-        (match (seq col)
-          x (lazy-seq #(cons (f (first x)) (map f (seq (rest x)))))
-          _ nil))
-    2 (let [(s1 s2) ...
-            s1 (seq s1) s2 (seq s2)]
-        (if (and s1 s2)
-            (lazy-seq #(cons (f (first s1) (first s2)) (map f (rest s1) (rest s2))))
-            nil))
-    3 (let [(s1 s2 s3) ...
-            s1 (seq s1) s2 (seq s2) s3 (seq s3)]
-        (if (and s1 s2 s3)
-            (lazy-seq #(cons (f (first s1) (first s2) (first s3))
-                             (map f (rest s1) (rest s2) (rest s3))))
-            nil))
+        (lazy-seq #(match (seq col)
+                     x (cons (f (first x)) (map f (seq (rest x))))
+                     _ nil)))
+    2 (let [(s1 s2) ...]
+        (lazy-seq #(let [s1 (seq s1) s2 (seq s2)]
+                     (if (and s1 s2)
+                         (cons (f (first s1) (first s2)) (map f (rest s1) (rest s2)))
+                         nil))))
+    3 (let [(s1 s2 s3) ...]
+        (lazy-seq #(let [s1 (seq s1) s2 (seq s2) s3 (seq s3)]
+                     (if (and s1 s2 s3)
+                         (cons (f (first s1) (first s2) (first s3))
+                               (map f (rest s1) (rest s2) (rest s3)))
+                         nil))))
     _ (let [s (seq [...] (select "#" ...))]
-        (if (every #(not= nil (seq $)) s)
-            (lazy-seq #(cons (f (seq-unpack (map first s)))
-                             (map f (seq-unpack (map rest s)))))
-            nil))))
+        (lazy-seq #(if (every? #(not= nil (seq $)) s)
+                       (cons (f (seq-unpack (map first s)))
+                             (map f (seq-unpack (map rest s))))
+                       nil)))))
 
 (fn take [n coll]
   "Take `n` elements from the collection `coll`.
@@ -218,10 +218,10 @@ Take 10 element from a sequential table
 (take 10 [1 2 3]) ;=> @seq(1 2 3)
 (take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
 ```"
-  (if (> n 0)
-      (lazy-seq #(match (seq coll)
-                   s (cons (first s) (take (- n 1) (rest s)))))
-      nil))
+  (lazy-seq #(if (> n 0)
+                 (match (seq coll)
+                   s (cons (first s) (take (- n 1) (rest s))))
+                 nil)))
 
 (fn drop [n coll]
   "Drop `n` elements from collection, returning a lazy sequence of
@@ -261,10 +261,10 @@ items of the `coll`."
 
 (fn fix-range [x end step]
   ;; fixed lazy range builder
-  (if (or (and (>= step 0) (< x end))
-          (and (< step 0) (> x end)))
-      (lazy-seq #(cons x (fix-range (+ x step) end step)))
-      nil))
+  (lazy-seq #(if (or (and (>= step 0) (< x end))
+                     (and (< step 0) (> x end)))
+                 (cons x (fix-range (+ x step) end step))
+                 nil)))
 
 (fn range [...]
   "Create a possibly infinite sequence of numbers.

@@ -25,25 +25,28 @@
         (assert-eq se {})
         (dorun s)
         (assert-eq se {:a 42})))
-    (testing "seq doesn't realize lazy-seq"
-      (let [se {}
-            s (lazy-seq #(tset se :a 42) [1 2 3])]
-        (seq s)
-        (assert-eq se {})
-        (dorun s)
-        (assert-eq se {:a 42})))
     (testing "counting"
       (assert-eq 3 (length (seq [1 2 3])))
-      (assert-eq 3 (length (lazy-seq #[1 2 3]))))))
+      (assert-eq 3 (length (lazy-seq #[1 2 3])))
+      (assert-eq 3 (length (seq [] 3))))))
 
 (deftest "map"
   (let [{: map : dorun} suit]
     (testing "map is lazy"
       (let [se []
-            s (map #(table.insert se $) [1 2 3])]
+            s1 (map #(table.insert se $) [1 2 3])
+            s2 (map #(table.insert se $) [4 5 6] [1 2 3])
+            s3 (map #(table.insert se $) [7 8 9] [4 5 6] [1 2 3])
+            s4 (map #(table.insert se $) [10 11 12] [7 8 9] [4 5 6] [1 2 3])]
         (assert-eq se {})
-        (dorun s)
-        (assert-eq [1 2 3] se)))
+        (dorun s1)
+        (assert-eq [1 2 3] se)
+        (dorun s2)
+        (assert-eq [1 2 3 4 5 6] se)
+        (dorun s3)
+        (assert-eq [1 2 3 4 5 6 7 8 9] se)
+        (dorun s4)
+        (assert-eq [1 2 3 4 5 6 7 8 9 10 11 12] se)))
     (testing "map length"
       (assert-eq 3 (length (map #nil [1 2 3]))))
     (testing "map accepts arbitrary amount of collections"
