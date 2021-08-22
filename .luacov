@@ -1,0 +1,16 @@
+-- -*- mode: lua; -*-
+-- setting default behaviors for luacov. For documentation on the options,
+-- see https://keplerproject.github.io/luacov/doc/modules/luacov.defaults.html
+
+return {
+  exclude = {"tests%/.*$", ".*luarocks.*", ".*fennel.*"},
+  runreport = true,
+  statsfile = "luacov.stats";
+  reportfile = "luacov.report";
+  cobertura = {
+    filenameparser = function(filename)
+      local name = filename:gsub("%.lua$", ".fnl")
+      return name
+    end,
+  },
+}
