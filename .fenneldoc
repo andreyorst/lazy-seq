@@ -21,7 +21,7 @@
  :project-copyright "Copyright (C) 2021 Andrey Listopadov"
  :project-license "[MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)"
  :project-version "v0.0.1"
- :project-doc-order {:init.fnl ["seq" "cons" "first" "rest" "next" "lazy-seq*" "dorun" "doall" "realized?" "seq-pack" "seq-unpack"]
+ :project-doc-order {:init.fnl ["seq" "cons" "first" "rest" "next*" "lazy-seq*" "dorun" "doall" "realized?" "seq-pack" "seq-unpack"]
                      :init-macros.fnl ["lazy-seq" "lazy-cat"]}
  :out-dir "./doc"
  :sandbox true

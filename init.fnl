@@ -90,22 +90,23 @@ Second element must be either a table or a sequence, or nil."
                       :__fennelview pp-seq})))
 
 (set seq
-     (fn [t size]
-       "Construct a sequence out of a table or another sequence `t`.
-Takes optional `size` argument for defining the length of the
-resulting sequence.  Since sequences can contain `nil` values,
-transforming packed table to a sequence is possible by passing the
-value of `n` key from such table.  Returns `nil` if given empty table,
-or empty sequence.
+     (fn [s ...]
+       "Construct a sequence out of a table or another sequence `s`.
+Returns `nil` if given an empty sequence.
 
-Sequences are immutable and persistent, though their contents are not
-immutable, meaning that if a sequence contains mutable tables, the
+When `s` is a table accepts optional `size` argument for defining the
+length of the resulting sequence.  Since sequences can contain `nil`
+values, transforming packed table to a sequence is possible by passing
+the value of `n` key from such table.  Returns `nil` if given empty
+table.
+
+Sequences are immutable and persistent, but their contents are not
+immutable, meaning that if a sequence contains mutable references, the
 contents of a sequence can change.  Unlike iterators, sequences are
 non-destructive, and can be shared.
 
 Sequences support two main operations: `first`, and `rest`.  Being a
-single linked list, sequences have linear access complexity, but can
-be sliced and concatenated in constant time.
+single linked list, sequences have linear access time complexity..
 
 # Examples
 
@@ -148,19 +149,20 @@ Iterating through a sequence:
 
 
 Sequences can also be created manually by using `cons` function."
-       (match (gettype t)
-         :cons t
-         :lazy-cons (seq (realize t))
+       (match (gettype s)
+         :cons s
+         :lazy-cons (seq (realize s))
          :empty-cons nil
          :nil nil
          ;; TODO: think thru how to support associative data
          ;;       structures and user-defined table-based data
          ;;       structures.  Maybe even not do a shallow copy, but
          ;;       wrap a `pairs` iterator
-         :table (do (var res nil)
-                    (for [i (or size (length t)) 1 -1]
-                      (set res (cons (. t i) res)))
-                    res)
+         :table (let [(size) ...]
+                  (var res nil)
+                  (for [i (or size (length s)) 1 -1]
+                    (set res (cons (. s i) res)))
+                  res)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
 (fn lazy-seq [f]
