@@ -31,7 +31,9 @@ If the sequence is empty, returns empty sequence."
 
 (fn realize [c]
   ;; force realize single cons cell
-  (doto c (c)))
+  (match (gettype c)
+    :lazy-cons (c))
+  c)
 
 (fn next* [s]
   "Return the tail of a sequence.
@@ -70,7 +72,7 @@ Second element must be either a table or a sequence, or nil."
   (let [(h t) ...]
     (assert (. allowed-types (gettype t))
             "expected nil, cons or table as a tail")
-    (setmetatable [] {:__call #(if $2 h (match (seq t) s s nil empty-cons))
+    (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
                       :__lazy-seq/type :cons
                       :__len #(do (var (s len) (values $ 0))
                                   (while s
