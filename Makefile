@@ -15,7 +15,6 @@ COMPILEFLAGS = --no-metadata
 .PHONY: build clean distclean test luacov luacov-console doc help $(LUAEXECUTABLES)
 
 build: $(LUASOURCES)
-	mv src/itable.lua init.lua
 
 ${LUASOURCES}: $(FNLSOURCES)
 
