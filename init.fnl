@@ -165,8 +165,8 @@ Sequences can also be created manually by using `cons` function."
                   res)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
-(fn lazy-seq [f]
-  "Create lazy sequence from the result of function `f`.
+(fn lazy-seq* [f]
+  "Create lazy sequence from the result of calling a function `f`.
 Delays execution of `f` until sequence is consumed.
 
 See `lazy-seq` macro from init-macros.fnl for more convenient usage."
@@ -221,11 +221,11 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 (fn concat [...]
   "Return a lazy sequence of concatenated sequences."
   (match (select "#" ...)
-    0 (lazy-seq #nil)
+    0 (lazy-seq* #nil)
     1 (let [(x) ...]
-        (lazy-seq #x))
+        (lazy-seq* #x))
     2 (let [(x y) ...]
-        (lazy-seq #(match (seq x)
+        (lazy-seq* #(match (seq x)
                      s (cons (first s) (concat (rest s) y))
                      nil y)))
     _ (concat (concat (pick-values 2 ...)) (select 3 ...))))
@@ -243,22 +243,22 @@ Returns lazy sequence.
   (match (select "#" ...)
     0 nil
     1 (let [(col) ...]
-        (lazy-seq #(match (seq col)
+        (lazy-seq* #(match (seq col)
                      x (cons (f (first x)) (map f (seq (rest x))))
                      _ nil)))
     2 (let [(s1 s2) ...]
-        (lazy-seq #(let [s1 (seq s1) s2 (seq s2)]
+        (lazy-seq* #(let [s1 (seq s1) s2 (seq s2)]
                      (if (and s1 s2)
                          (cons (f (first s1) (first s2)) (map f (rest s1) (rest s2)))
                          nil))))
     3 (let [(s1 s2 s3) ...]
-        (lazy-seq #(let [s1 (seq s1) s2 (seq s2) s3 (seq s3)]
+        (lazy-seq* #(let [s1 (seq s1) s2 (seq s2) s3 (seq s3)]
                      (if (and s1 s2 s3)
                          (cons (f (first s1) (first s2) (first s3))
                                (map f (rest s1) (rest s2) (rest s3)))
                          nil))))
     _ (let [s (seq [...] (select "#" ...))]
-        (lazy-seq #(if (every? #(not= nil (seq $)) s)
+        (lazy-seq* #(if (every? #(not= nil (seq $)) s)
                        (cons (f (seq-unpack (map first s)))
                              (map f (seq-unpack (map rest s))))
                        nil)))))
@@ -275,7 +275,7 @@ Take 10 element from a sequential table
 (take 10 [1 2 3]) ;=> @seq(1 2 3)
 (take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
 ```"
-  (lazy-seq #(if (> n 0)
+  (lazy-seq* #(if (> n 0)
                  (match (seq coll)
                    s (cons (first s) (take (- n 1) (rest s)))
                    _ nil)
@@ -289,12 +289,12 @@ of remaining elements."
                  (if (and (> n 0) s)
                      (step (- n 1) (rest s))
                      s)))]
-    (lazy-seq #(step n coll))))
+    (lazy-seq* #(step n coll))))
 
 (fn filter [pred coll]
   "Returns a lazy sequence of the items in the `coll` for which `pred`
 returns logical true."
-  (lazy-seq
+  (lazy-seq*
    #(match (seq coll)
       s (let [x (first s) r (rest s)]
           (if (pred x)
@@ -305,7 +305,7 @@ returns logical true."
 (fn keep [f coll]
   "Returns a lazy sequence of the non-nil results of calling `f` on the
 items of the `coll`."
-  (lazy-seq #(match (seq coll)
+  (lazy-seq* #(match (seq coll)
                s (match (f (first s))
                    x (cons x (keep f (rest s)))
                    nil (keep f (rest s)))
