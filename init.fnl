@@ -311,19 +311,30 @@ items of the `coll`."
                    nil (keep f (rest s)))
                _ nil)))
 
+(fn cycle [coll]
+  "Create a lazy infinite sequence of repetitions of the items in the
+`coll`."
+  (lazy-seq* #(concat (seq coll) (cycle coll))))
+
+(fn repeatedly [f ...]
+  "Takes a function `f` and returns an infinite lazy sequence of
+function applications.  Rest arguments are passed to the function."
+  (let [f (partial f ...)
+        step (fn step [f] (lazy-seq* #(cons (f) (step f))))]
+    (step f)))
 
 ;;; Range
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
-  (lazy-seq #(cons x (inf-range (+ x step) step))))
+  (lazy-seq* #(cons x (inf-range (+ x step) step))))
 
 (fn fix-range [x end step]
   ;; fixed lazy range builder
-  (lazy-seq #(if (or (and (>= step 0) (< x end))
-                     (and (< step 0) (> x end)))
-                 (cons x (fix-range (+ x step) end step))
-                 nil)))
+  (lazy-seq* #(if (or (and (>= step 0) (< x end))
+                      (and (< step 0) (> x end)))
+                  (cons x (fix-range (+ x step) end step))
+                  nil)))
 
 (fn range [...]
   "Create a possibly infinite sequence of numbers.
@@ -382,25 +393,44 @@ infinite sequences."
   (doto s (dorun)))
 
 (setmetatable
- {: take
-  : drop
-  : range
-  : concat
-  : map
-  : filter
-  : keep
+ {: first
+  : rest
+  : next*
+  : cons
   : seq
-  :lazy-seq* lazy-seq
-  : doall
-  : dorun
-  : realized?
+  : lazy-seq*
   : every?
   : some?
   : seq-pack
   : seq-unpack
-  : cons
-  : first
-  : rest
-  :next next*}
- {:__index {:_DESCRIPTION "Lazy sequence library for Fennel and Lua."
-            :_MODULE_NAME "lazy-seq.fnl"}})
+  : concat
+  : map
+  : take
+  : drop
+  : filter
+  : keep
+  : cycle
+  : repeatedly
+  : range
+  : realized?
+  : dorun
+  : doall}
+ {:__index {:_MODULE_NAME "lazy-seq.fnl"
+            :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
+
+Most functions in this library return a so called lazy sequence.  The
+contents of such sequences aren't computed until requested, and
+similarly to iterators, lazy sequences can be infinite.
+
+The key difference from iterators is that sequence itself is a data
+structure.  It can be passed, and shared between functions, and
+operations on a sequence will not affect other callers.  Infinite
+sequences are either consumed on per element basis, or bade finite by
+calling `take` with desired size argument.
+
+Both eager and lazy sequences support `pairs` iteration, which will
+never terminate in case of infinite lazy sequence.  Such iterator
+returns current sequence tail and it's head element as values.
+
+Lazy sequences can also be created with the help of macros `lazy-seq`
+and `lazy-cat`.  These macros are provided for convenience only."}})
