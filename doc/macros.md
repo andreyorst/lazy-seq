@@ -86,5 +86,5 @@ Copyright (C) 2021 Andrey Listopadov
 License: [MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)
 
 
-<!-- Generated with Fenneldoc v0.1.7
+<!-- Generated with Fenneldoc v0.1.5
      https://gitlab.com/andreyorst/fenneldoc -->
