@@ -96,7 +96,58 @@ Takes optional `size` argument for defining the length of the
 resulting sequence.  Since sequences can contain `nil` values,
 transforming packed table to a sequence is possible by passing the
 value of `n` key from such table.  Returns `nil` if given empty table,
-or empty sequence."
+or empty sequence.
+
+Sequences are immutable and persistent, though their contents are not
+immutable, meaning that if a sequence contains mutable tables, the
+contents of a sequence can change.  Unlike iterators, sequences are
+non-destructive, and can be shared.
+
+Sequences support two main operations: `first`, and `rest`.  Being a
+single linked list, sequences have linear access complexity, but can
+be sliced and concatenated in constant time.
+
+# Examples
+
+Transform sequential table to a sequence:
+
+``` fennel
+(local nums [1 2 3 4 5])
+(local num-seq (seq nums))
+
+(assert-eq nums [(seq-unpack num-seq)])
+```
+
+Sequences can have nils as their values, so packed tables can be
+easily transformed to a sequence:
+
+``` fennel
+(local t (table.pack :a nil nil :b :c nil nil nil))
+(local s (seq t t.n))
+(local view (require :fennel.view))
+(assert-eq \"@seq(\\\"a\\\" nil nil \\\"b\\\" \\\"c\\\" nil nil nil)\"
+           (view s))
+```
+
+Iterating through a sequence:
+
+```fennel
+(local s (seq [1 2 3 4 5]))
+
+(fn reverse [s]
+  ((fn reverse [s res]
+     (match (seq s)
+       s* (reverse (rest s*) (cons (first s*) res))
+       _ res))
+   s nil))
+
+(assert-eq [5 4 3 2 1]
+           [(seq-unpack (reverse s))])
+
+```
+
+
+Sequences can also be created manually by using `cons` function."
        (match (gettype t)
          :cons t
          :lazy-cons (seq (realize t))
@@ -104,7 +155,8 @@ or empty sequence."
          :nil nil
          ;; TODO: think thru how to support associative data
          ;;       structures and user-defined table-based data
-         ;;       structures
+         ;;       structures.  Maybe even not do a shallow copy, but
+         ;;       wrap a `pairs` iterator
          :table (do (var res nil)
                     (for [i (or size (length t)) 1 -1]
                       (set res (cons (. t i) res)))
@@ -223,7 +275,8 @@ Take 10 element from a sequential table
 ```"
   (lazy-seq #(if (> n 0)
                  (match (seq coll)
-                   s (cons (first s) (take (- n 1) (rest s))))
+                   s (cons (first s) (take (- n 1) (rest s)))
+                   _ nil)
                  nil)))
 
 (fn drop [n coll]
