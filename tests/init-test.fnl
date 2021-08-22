@@ -17,22 +17,32 @@
       (assert-is (cons 1 (cons nil nil))))))
 
 (deftest "sequences"
-  (let [{:lazy-seq* lazy-seq
-         : dorun : seq : rest} suit]
+  (let [{: lazy-seq* : dorun : seq : rest : cons} suit]
     (testing "seq returns nil"
       (assert-eq nil (seq nil))
       (assert-eq nil (seq []))
       (assert-eq nil (seq (rest []))))
     (testing "lazy-seq returns lazy "
       (let [se {}
-            s (lazy-seq #(tset se :a 42) [1 2 3])]
+            s (lazy-seq* #(tset se :a 42) [1 2 3])]
         (assert-eq se {})
         (dorun s)
         (assert-eq se {:a 42})))
     (testing "counting"
       (assert-eq 3 (length (seq [1 2 3])))
-      (assert-eq 3 (length (lazy-seq #[1 2 3])))
-      (assert-eq 3 (length (seq [] 3))))))
+      (assert-eq 3 (length (lazy-seq* #[1 2 3])))
+      (assert-eq 3 (length (seq [] 3))))
+    (testing "iteration"
+      (assert-eq [1 2 3 4 5]
+                 (icollect [_ v (pairs (seq [1 2 3 4 5]))] v))
+      (assert-eq [1 2 3 4 5]
+                 (icollect [_ v (pairs (lazy-seq* #[1 2 3 4 5]))] v))
+      (global s (lazy-seq* #(cons 1 s)))
+      (var i 0)
+      (assert-eq [1 1 1 1 1]
+                 (icollect [_ v (pairs s) :until (= i 5)]
+                   (do (set i (+ i 1))
+                       v))))))
 
 (deftest "map"
   (let [{: map : dorun} suit]
@@ -102,19 +112,19 @@
                    (->vec (take 5 (keep #(= 0 (% $ 2)) (range)))))))))
 
 (deftest "concat"
-  (let [{: concat :lazy-seq* lazy-seq : range : take} suit]
+  (let [{: concat : lazy-seq* : range : take} suit]
     (testing "concat is lazy"
       (let [se []
-            c1 (concat (lazy-seq #(do (table.insert se 1) [1])))
-            c2 (concat (lazy-seq #(do (table.insert se 1) [1]))
-                       (lazy-seq #(do (table.insert se 2) [2])))
-            c3 (concat (lazy-seq #(do (table.insert se 1) [1]))
-                       (lazy-seq #(do (table.insert se 2) [2]))
-                       (lazy-seq #(do (table.insert se 3) [3])))
-            c4 (concat (lazy-seq #(do (table.insert se 1) [1]))
-                       (lazy-seq #(do (table.insert se 2) [2]))
-                       (lazy-seq #(do (table.insert se 3) [3]))
-                       (lazy-seq #(do (table.insert se 4) [4])))]
+            c1 (concat (lazy-seq* #(do (table.insert se 1) [1])))
+            c2 (concat (lazy-seq* #(do (table.insert se 1) [1]))
+                       (lazy-seq* #(do (table.insert se 2) [2])))
+            c3 (concat (lazy-seq* #(do (table.insert se 1) [1]))
+                       (lazy-seq* #(do (table.insert se 2) [2]))
+                       (lazy-seq* #(do (table.insert se 3) [3])))
+            c4 (concat (lazy-seq* #(do (table.insert se 1) [1]))
+                       (lazy-seq* #(do (table.insert se 2) [2]))
+                       (lazy-seq* #(do (table.insert se 3) [3]))
+                       (lazy-seq* #(do (table.insert se 4) [4])))]
         (assert-eq se [])
         (assert-eq [1] (->vec c1))
         (assert-eq se [1])
