@@ -1,3 +1,3 @@
 [submodule "fennel-test"]
 	path = fennel-test
-	url = git@gitlab.com:andreyorst/fennel-test.git
+	url = https://gitlab.com/andreyorst/fennel-test.git
