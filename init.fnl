@@ -227,8 +227,8 @@ Take 10 element from a sequential table
                  nil)))
 
 (fn drop [n coll]
-  "Drop `n` elements from collection, returning a lazy sequence of
-remaining elements."
+  "Drop `n` elements from collection `coll`, returning a lazy sequence
+of remaining elements."
   (let [step (fn step [n coll]
                (let [s (seq coll)]
                  (if (and (> n 0) s)
@@ -328,6 +328,7 @@ infinite sequences."
 
 (setmetatable
  {: take
+  : drop
   : range
   : concat
   : map
