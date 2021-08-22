@@ -28,50 +28,45 @@ This library provides a set of functions for creating and manipulating (lazy) se
 For example, consider `map` function:
 
 ``` fennel
->> (local lazy (require :lazy-seq))
->> (lazy.map print [1 2 3])
-1
-2
-3
-@seq(nil nil nil)
+(local lazy (require :lazy-seq))
+(lazy.map print [1 2 3])
+;; prints: 1, 2, 3 on separate lines
+;; returns: @seq(nil nil nil)
 ```
 
 Each element of the vector `[1 2 3]` was printed and we got back a sequence of results: `@seq(nil nil nil)`.
 However, if the result of `lazy.map` call is put into the variable, there are no prints happening until this variable is realized:
 
 ``` fennel
->> (local {: map : first} (require :lazy-seq))
->> (local s (map print [1 2 3]))
->> (first s)
-1
-nil
->> s
-2
-3
-@seq(nil nil nil)
+(local {: map : first : doall} (require :lazy-seq))
+(local s (map print [1 2 3]))
+(first s)
+;; only prints 1, returns nil
+(doall s)
+;; only prints 2, 3, and returns @seq(nil nil nil)
 ```
 
 A sequence can be constructed from the table with the `seq` function, and a lazy variant with the `lazy-seq` macro:
 
 ``` fennel
->> (local {: seq} (require :lazy-seq))
->> (import-macros {: lazy-seq} :lazy-seq)
->> (seq [1 2 3 4 5])                    ; eager sequence
-@seq(1 2 3 4 5)
->> (lazy-seq [1 2 3 4 5])               ; lazy sequence
-@seq(1 2 3 4 5)
+(local {: seq} (require :lazy-seq))
+(import-macros {: lazy-seq} :lazy-seq)
+(seq [1 2 3 4 5])                    ; eager sequence
+;; @seq(1 2 3 4 5)
+(lazy-seq [1 2 3 4 5])               ; lazy sequence
+;; @seq(1 2 3 4 5)
 ```
 
 Lazy sequences can be self-referencing:
 
 ``` fennel
->> (local bc (require :bc)) ; lbc library for arbitrary precision math
->> (tset (getmetatable (bc.new 1)) :__fennelview tostring) ; render arbitrary precision numbers
->> (local {: cons : take} (require :lazy-seq))
->> (import-macros {: lazy-seq} :lazy-seq)
->> (local fib ((fn fib [a b] (lazy-seq (cons a (fib b (+ (bc.new a) (bc.new b)))))) 0 1))
->> (take 20 fib)
-@seq(0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181)
+(local bc (require :bc)) ; lbc library for arbitrary precision math
+(tset (getmetatable (bc.new 1)) :__fennelview tostring) ; render arbitrary precision numbers
+(local {: map : rest : take : drop} (require :lazy-seq))
+(import-macros {: lazy-cat} :lazy-seq)
+(global fib (lazy-cat [(bc.new 0) (bc.new 1)] (map #(+ $1 $2) (rest fib) fib)))
+(take 20 fib)
+;; @seq(0 1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584 4181)
 ```
 
 `fib` here is an infinite sequence of Fibonacci numbers.
