@@ -392,6 +392,17 @@ Walks whole sequence, realizing each cell.  Use at your own risk on
 infinite sequences."
   (doto s (dorun)))
 
+(fn line-seq [file]
+  "Accepts a `file`, and creates a lazy sequence of lines using
+`lines` metamethod."
+  (let [next-line (file:lines)
+        step (fn step [f]
+               (let [line (f)]
+                 (if (= :string (type line))
+                     (cons line (lazy-seq* #(step f)))
+                     nil)))]
+    (step next-line)))
+
 (setmetatable
  {: first
   : rest
@@ -414,7 +425,8 @@ infinite sequences."
   : range
   : realized?
   : dorun
-  : doall}
+  : doall
+  : line-seq}
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
 
