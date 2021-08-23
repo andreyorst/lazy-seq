@@ -68,8 +68,49 @@ Another Fibonacci sequence variant:
      (concat# ,(unpack (icollect [_ s (ipairs [...])]
                          `(lazy-seq# (fn [] ,s)))))))
 
+(fn doseq* [first rest binding-vec ...]
+  (if (= 0 (length binding-vec))
+      ...
+      (let [x (gensym :x) s (gensym :s) loop (gensym :loop)]
+        `((fn ,loop [,s]
+            (match (,first ,s)
+              ,x (let [,(. binding-vec 1) ,x]
+                   ,(doseq* first rest [(unpack binding-vec 3)] ...)
+                   (,loop (,rest ,s)))
+              nil nil))
+          ,(. binding-vec 2)))))
+
+(fn doseq [bindings ...]
+  "Execute body for side effects with let-like `bindings` for a given
+sequences.  Doesn't retain the head of the sequence.  Returns nil.
+
+# Examples
+
+Cartesian product:
+
+```fennel
+(local cartesian [])
+
+(doseq [x [:a :b :c]
+        y [1 2 3]
+        z [:foo :bar]]
+  (table.insert cartesian [x y z]))
+
+(assert-eq cartesian
+           [[:a 1 :foo] [:a 1 :bar] [:a 2 :foo] [:a 2 :bar] [:a 3 :foo] [:a 3 :bar]
+            [:b 1 :foo] [:b 1 :bar] [:b 2 :foo] [:b 2 :bar] [:b 3 :foo] [:b 3 :bar]
+            [:c 1 :foo] [:c 1 :bar] [:c 2 :foo] [:c 2 :bar] [:c 3 :foo] [:c 3 :bar]])
+```"
+  (assert-compile (sequence? bindings) "expected a sequential table with bindings" bindings)
+  (assert-compile (= 0 (% (length bindings) 2)) "expected even amount of name/value bindings" bindings)
+  (let [first (gensym :first)
+        rest (gensym :rest)]
+    `(let [{:rest ,rest :first ,first} (require ,lseq)]
+       ,(doseq* first rest bindings ...))))
+
 (setmetatable
  {: lazy-seq
-  : lazy-cat}
+  : lazy-cat
+  : doseq}
  {:__index {:_DESCRIPTION "Macros for creating lazy sequences."
             :_MODULE_NAME "macros.fnl"}})
