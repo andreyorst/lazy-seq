@@ -1,13 +1,30 @@
 # Lazy-seq.fnl (v0.0.1)
 Lazy sequence library for Fennel and Lua.
 
+Most functions in this library return a so called lazy sequence.  The
+contents of such sequences aren't computed until requested, and
+similarly to iterators, lazy sequences can be infinite.
+
+The key difference from iterators is that sequence itself is a data
+structure.  It can be passed, and shared between functions, and
+operations on a sequence will not affect other callers.  Infinite
+sequences are either consumed on per element basis, or bade finite by
+calling `take` with desired size argument.
+
+Both eager and lazy sequences support `pairs` iteration, which will
+never terminate in case of infinite lazy sequence.  Such iterator
+returns current sequence tail and it's head element as values.
+
+Lazy sequences can also be created with the help of macros `lazy-seq`
+and `lazy-cat`.  These macros are provided for convenience only.
+
 **Table of contents**
 
 - [`seq`](#seq)
 - [`cons`](#cons)
 - [`first`](#first)
 - [`rest`](#rest)
-- [`next`](#next)
+- [`next*`](#next)
 - [`lazy-seq*`](#lazy-seq)
 - [`dorun`](#dorun)
 - [`doall`](#doall)
@@ -15,12 +32,15 @@ Lazy sequence library for Fennel and Lua.
 - [`seq-pack`](#seq-pack)
 - [`seq-unpack`](#seq-unpack)
 - [`concat`](#concat)
+- [`cycle`](#cycle)
 - [`drop`](#drop)
 - [`every?`](#every)
 - [`filter`](#filter)
 - [`keep`](#keep)
+- [`line-seq`](#line-seq)
 - [`map`](#map)
 - [`range`](#range)
+- [`repeatedly`](#repeatedly)
 - [`some?`](#some)
 - [`take`](#take)
 
@@ -28,24 +48,25 @@ Lazy sequence library for Fennel and Lua.
 Function signature:
 
 ```
-(seq t size)
+(seq s ...)
 ```
 
-Construct a sequence out of a table or another sequence `t`.
-Takes optional `size` argument for defining the length of the
-resulting sequence.  Since sequences can contain `nil` values,
-transforming packed table to a sequence is possible by passing the
-value of `n` key from such table.  Returns `nil` if given empty table,
-or empty sequence.
+Construct a sequence out of a table or another sequence `s`.
+Returns `nil` if given an empty sequence.
 
-Sequences are immutable and persistent, though their contents are not
-immutable, meaning that if a sequence contains mutable tables, the
+When `s` is a table accepts optional `size` argument for defining the
+length of the resulting sequence.  Since sequences can contain `nil`
+values, transforming packed table to a sequence is possible by passing
+the value of `n` key from such table.  Returns `nil` if given empty
+table.
+
+Sequences are immutable and persistent, but their contents are not
+immutable, meaning that if a sequence contains mutable references, the
 contents of a sequence can change.  Unlike iterators, sequences are
 non-destructive, and can be shared.
 
 Sequences support two main operations: `first`, and `rest`.  Being a
-single linked list, sequences have linear access complexity, but can
-be sliced and concatenated in constant time.
+single linked list, sequences have linear access time complexity..
 
 ### Examples
 
@@ -119,11 +140,11 @@ Return the tail of a sequence.
 
 If the sequence is empty, returns empty sequence.
 
-## `next`
+## `next*`
 Function signature:
 
 ```
-(next s)
+(next* s)
 ```
 
 Return the tail of a sequence.
@@ -137,7 +158,7 @@ Function signature:
 (lazy-seq* f)
 ```
 
-Create lazy sequence from the result of function `f`.
+Create lazy sequence from the result of calling a function `f`.
 Delays execution of `f` until sequence is consumed.
 
 See `lazy-seq` macro from init-macros.fnl for more convenient usage.
@@ -204,6 +225,16 @@ Function signature:
 
 Return a lazy sequence of concatenated sequences.
 
+## `cycle`
+Function signature:
+
+```
+(cycle coll)
+```
+
+Create a lazy infinite sequence of repetitions of the items in the
+`coll`.
+
 ## `drop`
 Function signature:
 
@@ -242,6 +273,16 @@ Function signature:
 
 Returns a lazy sequence of the non-nil results of calling `f` on the
 items of the `coll`.
+
+## `line-seq`
+Function signature:
+
+```
+(line-seq file)
+```
+
+Accepts a `file`, and creates a lazy sequence of lines using
+`lines` metamethod.
 
 ## `map`
 Function signature:
@@ -286,6 +327,16 @@ Various ranges:
 (take 10 (range)) ;; => @seq(0 1 2 3 4 5 6 7 8 9)
 ```
 
+## `repeatedly`
+Function signature:
+
+```
+(repeatedly f ...)
+```
+
+Takes a function `f` and returns an infinite lazy sequence of
+function applications.  Rest arguments are passed to the function.
+
 ## `some?`
 Function signature:
 
@@ -323,5 +374,5 @@ Copyright (C) 2021 Andrey Listopadov
 License: [MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)
 
 
-<!-- Generated with Fenneldoc v0.1.5
+<!-- Generated with Fenneldoc v0.1.7
      https://gitlab.com/andreyorst/fenneldoc -->

@@ -5,6 +5,7 @@ Macros for creating lazy sequences.
 
 - [`lazy-seq`](#lazy-seq)
 - [`lazy-cat`](#lazy-cat)
+- [`doseq`](#doseq)
 
 ## `lazy-seq`
 Function signature:
@@ -78,6 +79,34 @@ Another Fibonacci sequence variant:
            [(seq-unpack (take 7 fib))])
 ```
 
+## `doseq`
+Function signature:
+
+```
+(doseq bindings ...)
+```
+
+Execute body for side effects with let-like `bindings` for a given
+sequences.  Doesn't retain the head of the sequence.  Returns nil.
+
+### Examples
+
+Cartesian product:
+
+```fennel
+(local cartesian [])
+
+(doseq [x [:a :b :c]
+        y [1 2 3]
+        z [:foo :bar]]
+  (table.insert cartesian [x y z]))
+
+(assert-eq cartesian
+           [[:a 1 :foo] [:a 1 :bar] [:a 2 :foo] [:a 2 :bar] [:a 3 :foo] [:a 3 :bar]
+            [:b 1 :foo] [:b 1 :bar] [:b 2 :foo] [:b 2 :bar] [:b 3 :foo] [:b 3 :bar]
+            [:c 1 :foo] [:c 1 :bar] [:c 2 :foo] [:c 2 :bar] [:c 3 :foo] [:c 3 :bar]])
+```
+
 
 ---
 
@@ -86,5 +115,5 @@ Copyright (C) 2021 Andrey Listopadov
 License: [MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)
 
 
-<!-- Generated with Fenneldoc v0.1.5
+<!-- Generated with Fenneldoc v0.1.7
      https://gitlab.com/andreyorst/fenneldoc -->
