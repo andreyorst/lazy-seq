@@ -24,7 +24,7 @@
  :project-doc-order {:init.fnl ["seq" "cons" "first" "rest" "next*" "lazy-seq*" "dorun" "doall" "realized?" "seq-pack" "seq-unpack"]
                      :init-macros.fnl ["lazy-seq" "lazy-cat"]}
  :out-dir "./doc"
- :sandbox true
+ :sandbox false
  :test-requirements {:init.fnl "(require-macros :fennel-test.test)"
                      :init-macros.fnl "(require-macros :fennel-test.test)
                                        (require-macros :init-macros)

@@ -281,8 +281,43 @@ Function signature:
 (line-seq file)
 ```
 
-Accepts a `file`, and creates a lazy sequence of lines using
+Accepts a `file` handle, and creates a lazy sequence of lines using
 `lines` metamethod.
+
+### Examples
+
+Lazy sequence of file lines may seem similar to an iterator over a
+file, but the main difference is that sequence can be shared onve
+realized, and iterator can't.  Lazy sequence can be consumed in
+iterator style with the `doseq` macro.
+
+Bear in mind, that since the sequence is lazy it should be realized or
+truncated before the file is closed:
+
+```fennel
+(let [lines (with-open [f (io.open "init.fnl" :r)]
+              (line-seq f))]
+  ;; this errors because only first line was realized, but the file
+  ;; was closed before the rest of lines were cached
+  (assert-not (pcall next* lines)))
+```
+
+Sequence is realized with `doall` before file was closed and can be shared:
+
+``` fennel
+(let [lines (with-open [f (io.open "init.fnl" :r)]
+              (doall (line-seq f)))]
+  (assert-is (pcall next* lines)))
+```
+
+Infinite files can't be fully realized, but can be partially realized
+with `take`:
+
+``` fennel
+(let [lines (with-open [f (io.open "/dev/urandom" :r)]
+              (doall (take 3 (line-seq f))))]
+  (assert-is (pcall next* lines)))
+```
 
 ## `map`
 Function signature:
