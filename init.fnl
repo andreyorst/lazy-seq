@@ -94,10 +94,10 @@ Second element must be either a table or a sequence, or nil."
        "Construct a sequence out of a table or another sequence `s`.
 Returns `nil` if given an empty sequence.
 
-When `s` is a table accepts optional `size` argument for defining the
+When `s` is a table, accepts optional `size` argument for defining the
 length of the resulting sequence.  Since sequences can contain `nil`
 values, transforming packed table to a sequence is possible by passing
-the value of `n` key from such table.  Returns `nil` if given empty
+the value of `n` key from such table.  Returns `nil` if given an empty
 table.
 
 Sequences are immutable and persistent, but their contents are not
@@ -144,7 +144,6 @@ Iterating through a sequence:
 
 (assert-eq [5 4 3 2 1]
            [(seq-unpack (reverse s))])
-
 ```
 
 
@@ -316,12 +315,23 @@ items of the `coll`."
 `coll`."
   (lazy-seq* #(concat (seq coll) (cycle coll))))
 
+(fn repeat [x]
+  "Takes a value `x` and returns an infinite lazy sequence of this value.
+
+# Examples
+
+``` fennel
+(assert-eq 10 (accumulate [res 0
+                           _ x (pairs (take 10 (repeat 1)))]
+                (+ res x)))
+```"
+  ((fn step [x] (lazy-seq* #(cons x (step x)))) x))
+
 (fn repeatedly [f ...]
   "Takes a function `f` and returns an infinite lazy sequence of
 function applications.  Rest arguments are passed to the function."
-  (let [f (partial f ...)
-        step (fn step [f] (lazy-seq* #(cons (f) (step f))))]
-    (step f)))
+  (let [f (partial f ...)]
+    ((fn step [f] (lazy-seq* #(cons (f) (step f)))) f)))
 
 ;;; Range
 
@@ -430,13 +440,30 @@ with `take`:
               (doall (take 3 (line-seq f))))]
   (assert-is (pcall next* lines)))
 ```"
-  (let [next-line (file:lines)
-        step (fn step [f]
-               (let [line (f)]
-                 (if (= :string (type line))
-                     (cons line (lazy-seq* #(step f)))
-                     nil)))]
-    (step next-line)))
+  (let [next-line (file:lines)]
+    ((fn step [f]
+       (let [line (f)]
+         (if (= :string (type line))
+             (cons line (lazy-seq* #(step f)))
+             nil)))
+     next-line)))
+
+(fn iter [s]
+  "Transform sequence `s` to a stateful iterator going over its elements.
+
+Provides a safer* iterator that only returns values of a sequence
+without the sequence tail. Returns `nil` when no elements left.
+Automatically converts its argument to a sequence by calling `seq` on
+it.
+
+(* Accidental realization of a tail of an
+infinite sequence can freeze your program and eat all memory, as the
+sequence is infinite.)"
+  (let [s (or (seq s) empty-cons)]
+    (var (seq-next _ state) (pairs s))
+    #(let [(new-state res) (seq-next s state)]
+       (set state new-state)
+       res)))
 
 (setmetatable
  {: first
@@ -456,12 +483,14 @@ with `take`:
   : filter
   : keep
   : cycle
+  : repeat
   : repeatedly
   : range
   : realized?
   : dorun
   : doall
-  : line-seq}
+  : line-seq
+  : iter}
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
 
