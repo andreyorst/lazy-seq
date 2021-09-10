@@ -7,7 +7,7 @@ stages:
 variables:
     GIT_SUBMODULE_STRATEGY: recursive
     fennel_ver: 0.10.0
-    fenneldoc_ver: v0.1.6
+    fenneldoc_ver: v0.1.7
 
 .install_fennel: &fennel |-
     cd "$HOME"
@@ -32,7 +32,6 @@ Lua:
             apk add -q
             lua5.2 lua5.3 lua5.3-dev lua5.4 luarocks5.3
             git make gcc musl-dev
-        - luarocks-5.3 install luafilesystem
         - export LUA=lua5.3
         - luarocks-5.3 install fennel "$fennel_ver"
         - luarocks-5.3 install luacov
