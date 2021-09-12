@@ -465,6 +465,36 @@ sequence is infinite.)"
        (set state new-state)
        res)))
 
+(fn pack [...]
+  ;; portable table.pack implementation
+  (doto [...]
+    (tset :n (select "#" ...))))
+
+(fn interleave [...]
+  "Returns a lazy sequence of the first item in each sequence, then the
+second one, until any sequence exhausts."
+  (match (values (select "#" ...) ...)
+    (0) empty-cons
+    (1 ?s) (lazy-seq* #?s)
+    (2 ?s1 ?s2)
+    (lazy-seq* #(let [s1 (seq ?s1)
+                      s2 (seq ?s2)]
+                  (if (and s1 s2)
+                      (cons (first s1)
+                            (cons (first s2)
+                                  (interleave (rest s1) (rest s2))))
+                      nil)))
+    (_)
+    (let [cols (seq [...] (select "#" ...))]
+      (lazy-seq* #(let [seqs (map seq cols)]
+                    (if (every? #(not= nil (seq $)) seqs)
+                        (concat (map first seqs)
+                                (interleave (seq-unpack (map rest seqs))))))))))
+
+(fn interpose [separator coll]
+  "Returns a lazy sequence of the elements of `coll` separated by `separator`."
+  (drop 1 (interleave (repeat separator) coll)))
+
 (setmetatable
  {: first
   : rest
@@ -490,7 +520,9 @@ sequence is infinite.)"
   : dorun
   : doall
   : line-seq
-  : iter}
+  : iter
+  : interleave
+  : interpose}
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
 
