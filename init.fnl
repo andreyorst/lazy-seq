@@ -479,11 +479,6 @@ sequence is infinite.)"
        (set state new-state)
        res)))
 
-(fn pack [...]
-  ;; portable table.pack implementation
-  (doto [...]
-    (tset :n (select "#" ...))))
-
 (fn interleave [...]
   "Returns a lazy sequence of the first item in each sequence, then the
 second one, until any sequence exhausts."
