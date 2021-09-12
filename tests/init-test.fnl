@@ -5,6 +5,36 @@
   (icollect [_ x (pairs s)]
     x))
 
+(deftest "seq"
+  (let [{: seq : rest} suit]
+    (testing "creating seqs from tables"
+      (assert-is (seq [1 2 3]))
+      (assert-eq nil (seq {:a 1 :b 2})))
+    (testing "invalid args"
+      (assert-not (pcall seq 10)))
+    (testing "empty seq returns nil"
+      (assert-eq nil (seq []))
+      (assert-eq nil (seq (rest (seq [1])))))))
+
+(deftest "equality"
+  (let [{: seq : take : range : drop : map} suit]
+    (testing "comparing seqs"
+      (assert-is (= (seq [1 2 3]) (seq [1 2 3])))
+      (assert-is (= (seq [0 1 2]) (take 3 (range)))))
+    (testing "comparing lazy seqs"
+      (assert-is (= (seq [0 1 2]) (take 3 (range))))
+      (assert-is (= (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))))
+    (testing "comparing seqs and tables"
+      (assert-is (= (seq [1 2 3]) [1 2 3]))
+      (assert-is (= (take 3 (range)) [0 1 2])))
+    (testing "using test suite equality"
+      (assert-eq (seq [1 2 3]) (seq [1 2 3]))
+      (assert-eq (seq [0 1 2]) (take 3 (range)))
+      (assert-eq (seq [0 1 2]) (take 3 (range)))
+      (assert-eq (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))
+      (assert-eq (seq [1 2 3]) [1 2 3])
+      (assert-eq (take 3 (range)) [0 1 2]))))
+
 (deftest "conses"
   (let [{: cons} suit]
     (testing "cons arity"
@@ -113,6 +143,12 @@
 
 (deftest "concat"
   (let [{: concat : lazy-seq* : range : take} suit]
+    (testing "concat arities"
+      (assert-is (concat))
+      (assert-eq [1 2] (concat [1] [2]))
+      (assert-eq [1 2 3] (concat [1] [2] [3]))
+      (assert-eq [1 2 3 4] (concat [1] [2] [3] [4]))
+      (assert-eq [1 2 3 4 5] (concat [1] [2] [3] [4] [5])))
     (testing "concat is lazy"
       (let [se []
             c1 (concat (lazy-seq* #(do (table.insert se 1) [1])))
@@ -136,3 +172,96 @@
         (assert-eq se [1 1 2 1 2 3 1 2 3 4])
         (assert-eq [-1 0 1 2 3]
                    (->vec (take 5 (concat [-1] (range)))))))))
+
+(deftest "every?"
+  (let [{: every?} suit]
+    (testing "every?"
+      (assert-is (every? #(> $ 0) [1 2 3]))
+      (assert-not (every? #(> $ 0) [1 0 3]))
+      (assert-not (every? #(> $ 0) [])))))
+
+(deftest "some?"
+  (let [{: some?} suit]
+    (testing "some?"
+      (assert-is (some? #(> $ 0) [-1 2 -3]))
+      (assert-not (some? #(> $ 0) [-1 0 -3]))
+      (assert-not (some? #(> $ 0) [])))))
+
+(deftest "cycle"
+  (let [{: cycle : take : map} suit]
+    (testing "cycling a table"
+      (assert-eq [1 2 3 1 2 3 1 2 3 1]
+                 (take 10 (cycle [1 2 3]))))
+    (testing "cycling a lazy seq"
+      (assert-eq [1 2 3 1 2 3 1 2 3 1]
+                 (take 10 (cycle (map #$ [1 2 3])))))))
+
+(deftest "repeat"
+  (let [{: repeat : take} suit]
+    (testing "repeating a value"
+      (assert-eq [42 42 42 42 42 42 42 42 42 42]
+                 (take 10 (repeat 42))))))
+
+(deftest "repeatedly"
+  (let [{: repeatedly : take} suit]
+    (testing "repeating a function call"
+      (assert-eq [42 42 42 42 42 42 42 42 42 42]
+                 (take 10 (repeatedly #42))))))
+
+
+(deftest "realized?"
+  (let [{: realized? : lazy-seq*} suit]
+    (testing "realized?"
+      (assert-is (realized? [1 2 3]))
+      (assert-not (realized? (lazy-seq* #nil))))))
+
+(deftest "doall and dorun"
+  (let [{: doall : dorun : map : seq : seq-pack} suit]
+    (testing "doall"
+      (let [se []
+            s (map #(table.insert se $) [1 2 3])]
+        (assert-eq se [])
+        (assert-eq {:n 3} (seq-pack (doall s)))
+        (assert-eq se [1 2 3])))
+    (testing "dorun"
+      (let [se []
+            s (map #(table.insert se $) [1 2 3])]
+        (assert-eq se [])
+        (assert-eq nil (dorun s))
+        (assert-eq se [1 2 3])))))
+
+(deftest "line sequence"
+  (let [{: line-seq : take} suit]
+    (testing "line-seq is lazy"
+      (let [se []
+            f {:lines (fn [] #(do (table.insert se 42) "42"))}
+            lines (line-seq f)]
+        (assert-eq se [42])
+        (assert-eq [:42 :42 :42 :42 :42 :42 :42 :42 :42 :42]
+                   (take 10 lines))
+        (assert-eq [42 42 42 42 42 42 42 42 42 42]
+                   se)))))
+
+(deftest "iter"
+  (let [{: iter : seq : lazy-seq*} suit]
+    (testing "iterator over sequences"
+      (let [s (seq [1 2 3])]
+        (assert-eq [1 2 3] (icollect [x (iter s)] x)))
+      (let [s (lazy-seq* #[1 2 3])]
+        (assert-eq [1 2 3] (icollect [x (iter s)] x))))))
+
+(deftest "interleave"
+  (let [{: interleave : lazy-seq* : rest} suit]
+    (testing "interleave"
+      (assert-eq (rest [1]) (interleave))
+      (assert-eq [1 2 3] (interleave [1 2 3]))
+      (assert-eq [1 4 2 5 3 6] (interleave [1 2 3] [4 5 6]))
+      (assert-eq [1 4 7 2 5 8 3 6 9] (interleave [1 2 3] [4 5 6] [7 8 9]))
+      (assert-eq [1 4 7] (interleave [1 2 3] [4 5 6] [7]))
+      (assert-eq [1 4 2 5 3 6] (interleave (lazy-seq* #[1 2 3]) (lazy-seq* #[4 5 6]))))))
+
+(deftest "interpose"
+  (let [{: interpose : lazy-seq*} suit]
+    (testing "interpose"
+      (assert-eq [1 0 2 0 3] (interpose 0 [1 2 3]))
+      (assert-eq [1 0 2 0 3] (interpose 0 (lazy-seq* #[1 2 3]))))))
