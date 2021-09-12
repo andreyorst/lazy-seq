@@ -24,30 +24,35 @@
       (assert-eq "@seq()" (view (rest (seq [1]))))
       (assert-eq "@seq(1)" (view (lazy-seq* #[1])))
       (assert-eq "@seq()" (view (rest (lazy-seq* #[1])))))
-    (testing "seq tostring"
-      (assert-is (: (tostring (seq [1])) :match "cons"))
-      (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
-      (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
-      (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))))
+    (if (: (tostring (setmetatable {} {:__name "foo"})) :match :foo)
+        (testing "seq tostring"
+          (assert-is (: (tostring (seq [1])) :match "cons"))
+          (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
+          (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
+          (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))
+        (io.stderr:write "info: Skipping tostring test\n"))))
 
 (deftest "equality"
-  (let [{: seq : take : range : drop : map} suit]
-    (testing "comparing seqs"
-      (assert-is (= (seq [1 2 3]) (seq [1 2 3])))
-      (assert-is (= (seq [0 1 2]) (take 3 (range)))))
-    (testing "comparing lazy seqs"
-      (assert-is (= (seq [0 1 2]) (take 3 (range))))
-      (assert-is (= (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))))
-    (testing "comparing seqs and tables"
-      (assert-is (= (seq [1 2 3]) [1 2 3]))
-      (assert-is (= (take 3 (range)) [0 1 2])))
-    (testing "using test suite equality"
-      (assert-eq (seq [1 2 3]) (seq [1 2 3]))
-      (assert-eq (seq [0 1 2]) (take 3 (range)))
-      (assert-eq (seq [0 1 2]) (take 3 (range)))
-      (assert-eq (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))
-      (assert-eq (seq [1 2 3]) [1 2 3])
-      (assert-eq (take 3 (range)) [0 1 2]))))
+  (if (= (setmetatable {} {:__eq (fn [a b] (rawequal a b))})
+         (setmetatable {} {:__eq (fn [a b] (rawequal a b))}))
+      (let [{: seq : take : range : drop : map} suit]
+        (testing "comparing seqs"
+          (assert-is (= (seq [1 2 3]) (seq [1 2 3])))
+          (assert-is (= (seq [0 1 2]) (take 3 (range)))))
+        (testing "comparing lazy seqs"
+          (assert-is (= (seq [0 1 2]) (take 3 (range))))
+          (assert-is (= (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))))
+        (testing "comparing seqs and tables"
+          (assert-is (= (seq [1 2 3]) [1 2 3]))
+          (assert-is (= (take 3 (range)) [0 1 2])))
+        (testing "using test suite equality"
+          (assert-eq (seq [1 2 3]) (seq [1 2 3]))
+          (assert-eq (seq [0 1 2]) (take 3 (range)))
+          (assert-eq (seq [0 1 2]) (take 3 (range)))
+          (assert-eq (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))
+          (assert-eq (seq [1 2 3]) [1 2 3])
+          (assert-eq (take 3 (range)) [0 1 2])))
+      (io.stderr:write "info: Skipping equality test\n")))
 
 (deftest "conses"
   (let [{: cons} suit]
@@ -166,10 +171,10 @@
   (let [{: concat : lazy-seq* : range : take} suit]
     (testing "concat arities"
       (assert-is (concat))
-      (assert-eq [1 2] (concat [1] [2]))
-      (assert-eq [1 2 3] (concat [1] [2] [3]))
-      (assert-eq [1 2 3 4] (concat [1] [2] [3] [4]))
-      (assert-eq [1 2 3 4 5] (concat [1] [2] [3] [4] [5])))
+      (assert-eq [1 2] (->vec (concat [1] [2])))
+      (assert-eq [1 2 3] (->vec (concat [1] [2] [3])))
+      (assert-eq [1 2 3 4] (->vec (concat [1] [2] [3] [4])))
+      (assert-eq [1 2 3 4 5] (->vec (concat [1] [2] [3] [4] [5]))))
     (testing "concat is lazy"
       (let [se []
             c1 (concat (lazy-seq* #(do (table.insert se 1) [1])))
@@ -212,41 +217,41 @@
   (let [{: cycle : take : map} suit]
     (testing "cycling a table"
       (assert-eq [1 2 3 1 2 3 1 2 3 1]
-                 (take 10 (cycle [1 2 3]))))
+                 (->vec (take 10 (cycle [1 2 3])))))
     (testing "cycling a lazy seq"
       (assert-eq [1 2 3 1 2 3 1 2 3 1]
-                 (take 10 (cycle (map #$ [1 2 3])))))))
+                 (->vec (take 10 (cycle (map #$ [1 2 3]))))))))
 
 (deftest "repeat"
   (let [{: repeat : take} suit]
     (testing "repeating a value"
       (assert-eq [42 42 42 42 42 42 42 42 42 42]
-                 (take 10 (repeat 42))))))
+                 (->vec (take 10 (repeat 42)))))))
 
 (deftest "repeatedly"
   (let [{: repeatedly : take} suit]
     (testing "repeating a function call"
       (assert-eq [42 42 42 42 42 42 42 42 42 42]
-                 (take 10 (repeatedly #42))))))
+                 (->vec (take 10 (repeatedly #42)))))))
 
 (deftest "range"
   (let [{: range : take} suit]
     (testing "fixed ranges"
-      (assert-eq (take 10 (range)) [0 1 2 3 4 5 6 7 8 9])
-      (assert-eq (range 10) [0 1 2 3 4 5 6 7 8 9])
-      (assert-eq (range 1 5) [1 2 3 4])
-      (assert-eq (range 1 -5) [])
-      (assert-eq (range -1 5) [-1 0 1 2 3 4])
-      (assert-eq (range -1 -5) [])
-      (assert-eq (range -5 -1) [-5 -4 -3 -2])
-      (assert-eq (range -5 -1 -1) [])
-      (assert-eq (range -1 -5 -1) [-1 -2 -3 -4])
-      (assert-eq (take 10 (range -1 -5 0)) [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1])
-      (assert-eq (take 10 (range -5 -1 0)) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
-      (assert-eq (take 10 (range -5 0 0)) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
-      (assert-eq (range 0) [])
-      (assert-eq (range 0 0) [])
-      (assert-eq (range 0 0 0) []))))
+      (assert-eq (->vec (take 10 (range))) [0 1 2 3 4 5 6 7 8 9])
+      (assert-eq (->vec (range 10)) [0 1 2 3 4 5 6 7 8 9])
+      (assert-eq (->vec (range 1 5)) [1 2 3 4])
+      (assert-eq (->vec (range 1 -5)) [])
+      (assert-eq (->vec (range -1 5)) [-1 0 1 2 3 4])
+      (assert-eq (->vec (range -1 -5)) [])
+      (assert-eq (->vec (range -5 -1)) [-5 -4 -3 -2])
+      (assert-eq (->vec (range -5 -1 -1)) [])
+      (assert-eq (->vec (range -1 -5 -1)) [-1 -2 -3 -4])
+      (assert-eq (->vec (take 10 (range -1 -5 0))) [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1])
+      (assert-eq (->vec (take 10 (range -5 -1 0))) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
+      (assert-eq (->vec (take 10 (range -5 0 0))) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
+      (assert-eq (->vec (range 0)) [])
+      (assert-eq (->vec (range 0 0)) [])
+      (assert-eq (->vec (range 0 0 0)) []))))
 
 (deftest "realized?"
   (let [{: realized? : lazy-seq*} suit]
@@ -277,7 +282,7 @@
             lines (line-seq f)]
         (assert-eq se [42])
         (assert-eq [:42 :42 :42 :42 :42 :42 :42 :42 :42 :42]
-                   (take 10 lines))
+                   (->vec (take 10 lines)))
         (assert-eq [42 42 42 42 42 42 42 42 42 42]
                    se)))))
 
@@ -293,14 +298,14 @@
   (let [{: interleave : lazy-seq* : rest} suit]
     (testing "interleave"
       (assert-eq (rest [1]) (interleave))
-      (assert-eq [1 2 3] (interleave [1 2 3]))
-      (assert-eq [1 4 2 5 3 6] (interleave [1 2 3] [4 5 6]))
-      (assert-eq [1 4 7 2 5 8 3 6 9] (interleave [1 2 3] [4 5 6] [7 8 9]))
-      (assert-eq [1 4 7] (interleave [1 2 3] [4 5 6] [7]))
-      (assert-eq [1 4 2 5 3 6] (interleave (lazy-seq* #[1 2 3]) (lazy-seq* #[4 5 6]))))))
+      (assert-eq [1 2 3] (->vec (interleave [1 2 3])))
+      (assert-eq [1 4 2 5 3 6] (->vec (interleave [1 2 3] [4 5 6])))
+      (assert-eq [1 4 7 2 5 8 3 6 9] (->vec (interleave [1 2 3] [4 5 6] [7 8 9])))
+      (assert-eq [1 4 7] (->vec (interleave [1 2 3] [4 5 6] [7])))
+      (assert-eq [1 4 2 5 3 6] (->vec (interleave (lazy-seq* #[1 2 3]) (lazy-seq* #[4 5 6])))))))
 
 (deftest "interpose"
   (let [{: interpose : lazy-seq*} suit]
     (testing "interpose"
-      (assert-eq [1 0 2 0 3] (interpose 0 [1 2 3]))
-      (assert-eq [1 0 2 0 3] (interpose 0 (lazy-seq* #[1 2 3]))))))
+      (assert-eq [1 0 2 0 3] (->vec (interpose 0 [1 2 3])))
+      (assert-eq [1 0 2 0 3] (->vec (interpose 0 (lazy-seq* #[1 2 3])))))))

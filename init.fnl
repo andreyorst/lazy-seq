@@ -88,7 +88,6 @@ Second element must be either a table or a sequence, or nil."
                                               nil))
                                         nil $)
                       :__name "cons"
-                      ;; TODO: test equality
                       :__eq (fn [s1 s2]
                               (if (rawequal s1 s2)
                                   true
