@@ -16,6 +16,20 @@
       (assert-eq nil (seq []))
       (assert-eq nil (seq (rest (seq [1])))))))
 
+(deftest "printing sequences"
+  (let [{: seq : lazy-seq* : rest} suit
+        view (require :fennel.view)]
+    (testing "seq pretty-printing"
+      (assert-eq "@seq(1)" (view (seq [1])))
+      (assert-eq "@seq()" (view (rest (seq [1]))))
+      (assert-eq "@seq(1)" (view (lazy-seq* #[1])))
+      (assert-eq "@seq()" (view (rest (lazy-seq* #[1])))))
+    (testing "seq tostring"
+      (assert-is (: (tostring (seq [1])) :match "cons"))
+      (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
+      (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
+      (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))))
+
 (deftest "equality"
   (let [{: seq : take : range : drop : map} suit]
     (testing "comparing seqs"
@@ -47,16 +61,23 @@
       (assert-is (cons 1 (cons nil nil))))))
 
 (deftest "sequences"
-  (let [{: lazy-seq* : dorun : seq : rest : cons} suit]
+  (let [{: lazy-seq* : dorun : seq : first : rest : cons} suit]
     (testing "seq returns nil"
       (assert-eq nil (seq nil))
       (assert-eq nil (seq []))
-      (assert-eq nil (seq (rest []))))
+      (assert-eq nil (seq (rest [])))
+      (assert-eq nil (first nil)))
     (testing "lazy-seq returns lazy "
       (let [se {}
             s (lazy-seq* #(tset se :a 42) [1 2 3])]
         (assert-eq se {})
         (dorun s)
+        (assert-eq se {:a 42})))
+    (testing "lazy-seq realized on printing"
+      (let [se {}
+            s (lazy-seq* #(tset se :a 42) [1 2 3])]
+        (assert-eq se {})
+        ((require :fennel.view) s)
         (assert-eq se {:a 42})))
     (testing "counting"
       (assert-eq 3 (length (seq [1 2 3])))
