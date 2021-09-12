@@ -14,6 +14,7 @@
                      :__newindex #nil
                      :__name "cons"
                      :__pairs #(values next [] nil)
+                     :__eq (fn [s1 s2] (rawequal s1 s2))
                      :__call #(if $2 nil e)})))
 
 (fn rest [s]
@@ -39,7 +40,7 @@ If the sequence is empty, returns empty sequence."
   "Return the tail of a sequence.
 
 If the sequence is empty, returns nil."
-  (seq (realize (rest s))))
+  (seq (realize (rest (seq s)))))
 
 ;;; Cons cell
 
@@ -87,6 +88,16 @@ Second element must be either a table or a sequence, or nil."
                                               nil))
                                         nil $)
                       :__name "cons"
+                      ;; TODO: test equality
+                      :__eq (fn [s1 s2]
+                              (if (rawequal s1 s2)
+                                  true
+                                  (do (var (s1 s2 res) (values s1 s2 true))
+                                      (while (and res s1 s2)
+                                        (set res (= (first s1) (first s2)))
+                                        (set s1 (next* s1))
+                                        (set s2 (next* s2)))
+                                      res)))
                       :__fennelview pp-seq})))
 
 (set seq
@@ -180,6 +191,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__len #(length (realize))
                              :__pairs #(pairs (realize))
                              :__name "lazy cons"
+                             :__eq (fn [s1 s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
 
 (fn every? [pred coll]
