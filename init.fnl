@@ -356,6 +356,8 @@ function applications.  Rest arguments are passed to the function."
   (lazy-seq* #(if (or (and (>= step 0) (< x end))
                       (and (< step 0) (> x end)))
                   (cons x (fix-range (+ x step) end step))
+                  (and (= step 0) (not= x end))
+                  (cons x (fix-range x end step))
                   nil)))
 
 (fn range [...]

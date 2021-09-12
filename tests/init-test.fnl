@@ -208,6 +208,24 @@
       (assert-eq [42 42 42 42 42 42 42 42 42 42]
                  (take 10 (repeatedly #42))))))
 
+(deftest "range"
+  (let [{: range : take} suit]
+    (testing "fixed ranges"
+      (assert-eq (take 10 (range)) [0 1 2 3 4 5 6 7 8 9])
+      (assert-eq (range 10) [0 1 2 3 4 5 6 7 8 9])
+      (assert-eq (range 1 5) [1 2 3 4])
+      (assert-eq (range 1 -5) [])
+      (assert-eq (range -1 5) [-1 0 1 2 3 4])
+      (assert-eq (range -1 -5) [])
+      (assert-eq (range -5 -1) [-5 -4 -3 -2])
+      (assert-eq (range -5 -1 -1) [])
+      (assert-eq (range -1 -5 -1) [-1 -2 -3 -4])
+      (assert-eq (take 10 (range -1 -5 0)) [-1 -1 -1 -1 -1 -1 -1 -1 -1 -1])
+      (assert-eq (take 10 (range -5 -1 0)) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
+      (assert-eq (take 10 (range -5 0 0)) [-5 -5 -5 -5 -5 -5 -5 -5 -5 -5])
+      (assert-eq (range 0) [])
+      (assert-eq (range 0 0) [])
+      (assert-eq (range 0 0 0) []))))
 
 (deftest "realized?"
   (let [{: realized? : lazy-seq*} suit]
