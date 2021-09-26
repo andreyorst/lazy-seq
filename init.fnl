@@ -1,6 +1,24 @@
 (local {: view} (require :fennel))
 (var seq nil)                    ; forward declaration of seq function
 
+(local lua-pairs pairs)
+(local lua-ipairs ipairs)
+
+(fn pairs [t]
+  (match (getmetatable t)
+    {:__pairs p} (p t)
+    _ (lua-pairs t)))
+
+(fn ipairs [t]
+  (match (getmetatable t)
+    {:__ipairs i} (i t)
+    _ (lua-ipairs t)))
+
+(fn length* [t]
+  (match (getmetatable t)
+    {:__len l} (l t)
+    _ (length t)))
+
 (fn first [s]
   "Return first element of a sequence."
   (match (seq s)
@@ -165,14 +183,14 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                         (setmetatable lazy-cons (getmetatable empty-cons)))))]
     (setmetatable lazy-cons {:__call #((realize) $2)
                              :__fennelview #((. (getmetatable (realize)) :__fennelview) $...)
-                             :__len #(length (realize))
+                             :__len #(length* (realize))
                              :__pairs #(pairs (realize))
                              :__name "lazy cons"
                              :__eq (fn [s1 s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
 
 (fn assoc? [t]
-  (let [len (length t)
+  (let [len (length* t)
         (nxt t* k) (pairs t)]
     (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
         (> len 0) :seq

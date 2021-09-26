@@ -1,6 +1,24 @@
 (require-macros :fennel-test.test)
 (local suit (require :init))
 
+(local lua-pairs pairs)
+(local lua-ipairs ipairs)
+
+(fn pairs [t]
+  (match (getmetatable t)
+    {:__pairs p} (p t)
+    _ (lua-pairs t)))
+
+(fn ipairs [t]
+  (match (getmetatable t)
+    {:__ipairs i} (i t)
+    _ (lua-ipairs t)))
+
+(fn length* [t]
+  (match (getmetatable t)
+    {:__len l} (l t)
+    _ (length t)))
+
 (fn ->vec [s]
   (icollect [_ x (pairs s)]
     x))
@@ -90,8 +108,8 @@
         ((require :fennel.view) s)
         (assert-eq se {:a 42})))
     (testing "counting"
-      (assert-eq 3 (length (seq [1 2 3])))
-      (assert-eq 3 (length (lazy-seq* #[1 2 3]))))
+      (assert-eq 3 (length* (seq [1 2 3])))
+      (assert-eq 3 (length* (lazy-seq* #[1 2 3]))))
     (testing "iteration"
       (assert-eq [1 2 3 4 5]
                  (icollect [_ v (pairs (seq [1 2 3 4 5]))] v))
@@ -122,7 +140,7 @@
         (dorun s4)
         (assert-eq [1 2 3 4 5 6 7 8 9 10 11 12] se)))
     (testing "map length"
-      (assert-eq 3 (length (map #nil [1 2 3]))))
+      (assert-eq 3 (length* (map #nil [1 2 3]))))
     (testing "map accepts arbitrary amount of collections"
       (assert-eq (->vec (map #[$...] [:a]))
                  [[:a]])
@@ -151,7 +169,7 @@
         (assert-eq se [1 -1 2 -2 3 -3])
         (assert-eq [0 2 4 6 8] (->vec (take 5 (filter #(= 0 (% $ 2)) (range)))))))
     (testing "filtering"
-      (assert-eq 0 (length (filter #(< $ 0) [1 2 3])))
+      (assert-eq 0 (length* (filter #(< $ 0) [1 2 3])))
       (assert-eq [] (->vec (filter #(< $ 0) [1 2 3])))
       (assert-eq nil (seq (filter #(< $ 0) [1 2 3])))
       (assert-eq [1 2 3] (->vec (filter #(> $ 0) [-1 1 2 -2 -3 -3 -3 -3 3]))))))
