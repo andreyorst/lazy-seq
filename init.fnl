@@ -120,6 +120,8 @@ Second element must be either a table or a sequence, or nil."
 
 (var table-to-cons-iter nil)
 
+(global utf8 _G.utf8)
+
 (set seq
      (fn [s]
        "Construct a sequence out of a table or another sequence `s`.
@@ -168,6 +170,12 @@ Sequences can also be created manually by using `cons` function."
          :empty-cons nil
          :nil nil
          :table (table-to-cons-iter s)
+         :string (table-to-cons-iter (if utf8
+                                         (let [char utf8.char]
+                                           (icollect [_ b (utf8.codes s)]
+                                             (char b)))
+                                         (icollect [b (s:gmatch ".")]
+                                           b)))
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
 (fn lazy-seq* [f]

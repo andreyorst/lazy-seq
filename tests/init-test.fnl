@@ -27,7 +27,8 @@
   (let [{: seq : rest} suit]
     (testing "creating seqs from tables"
       (assert-is (seq [1 2 3]))
-      (assert-is (seq {:a 1 :b 2})))
+      (assert-is (seq {:a 1 :b 2}))
+      (assert-is "foo"))
     (testing "invalid args"
       (assert-not (pcall seq 10)))
     (testing "empty seq returns nil"
@@ -42,11 +43,13 @@
       (assert-eq "@seq(1)" (view (seq [1])))
       (assert-eq "@seq(1 2 3)" (view (seq [1 2 3])))
       (assert-eq "@seq([\"a\" 1])" (view (seq {:a 1})))
+      (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (seq "char")))
       (assert-eq "@seq()" (view (rest (seq [1]))))
       (assert-eq "@seq(1)" (view (lazy-seq* #[1])))
       (assert-eq "@seq(1 2 3)" (view (lazy-seq* #[1 2 3])))
       (assert-eq "@seq([\"b\" 2])" (view (lazy-seq* #{:b 2})))
-      (assert-eq "@seq()" (view (rest (lazy-seq* #[1])))))
+      (assert-eq "@seq()" (view (rest (lazy-seq* #[1]))))
+      (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (lazy-seq* #"char"))))
     (if (: (tostring (setmetatable {} {:__name "foo"})) :match :foo)
         (testing "seq tostring"
           (assert-is (: (tostring (seq [1])) :match "cons"))
