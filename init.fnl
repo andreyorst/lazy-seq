@@ -197,7 +197,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__eq (fn [s1 s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
 
-(fn assoc? [t]
+(fn kind [t]
   (let [len (length* t)
         (nxt t* k) (pairs t)]
     (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
@@ -206,21 +206,19 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 
 (set table-to-cons-iter
      (fn [t]
-       (match (assoc? t)
-         :assoc (let [(nxt t k) (pairs t)
-                      get-next (fn get-next [nxt t k]
-                                 (let [(k v) (nxt t k)]
-                                   (if (not= nil k)
-                                       (cons [k v] (lazy-seq* #(get-next nxt t k)))
-                                       empty-cons)))]
-                  (get-next nxt t k))
-         :seq (let [(nxt t i) (ipairs t)
-                    get-next (fn get-next [nxt t i]
-                               (let [(i v) (nxt t i)]
-                                 (if (not= nil i)
-                                     (cons v (lazy-seq* #(get-next nxt t i)))
-                                     empty-cons)))]
-                (get-next nxt t i))
+       (match (kind t)
+         :assoc ((fn wrap [nxt t k]
+                   (let [(k v) (nxt t k)]
+                     (if (not= nil k)
+                         (cons [k v] (lazy-seq* #(wrap nxt t k)))
+                         empty-cons)))
+                 (pairs t))
+         :seq ((fn wrap [nxt t i]
+                 (let [(i v) (nxt t i)]
+                   (if (not= nil i)
+                       (cons v (lazy-seq* #(wrap nxt t i)))
+                       empty-cons)))
+               (ipairs t))
          :empty nil)))
 
 (fn every? [pred coll]
