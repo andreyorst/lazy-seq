@@ -9,20 +9,25 @@
   (let [{: seq : rest} suit]
     (testing "creating seqs from tables"
       (assert-is (seq [1 2 3]))
-      (assert-eq nil (seq {:a 1 :b 2})))
+      (assert-is (seq {:a 1 :b 2})))
     (testing "invalid args"
       (assert-not (pcall seq 10)))
     (testing "empty seq returns nil"
       (assert-eq nil (seq []))
-      (assert-eq nil (seq (rest (seq [1])))))))
+      (assert-eq nil (seq (rest (seq [1]))))
+      (assert-eq nil (seq (rest (seq {:a 1})))))))
 
 (deftest "printing sequences"
   (let [{: seq : lazy-seq* : rest} suit
         view (require :fennel.view)]
     (testing "seq pretty-printing"
       (assert-eq "@seq(1)" (view (seq [1])))
+      (assert-eq "@seq(1 2 3)" (view (seq [1 2 3])))
+      (assert-eq "@seq([\"a\" 1])" (view (seq {:a 1})))
       (assert-eq "@seq()" (view (rest (seq [1]))))
       (assert-eq "@seq(1)" (view (lazy-seq* #[1])))
+      (assert-eq "@seq(1 2 3)" (view (lazy-seq* #[1 2 3])))
+      (assert-eq "@seq([\"b\" 2])" (view (lazy-seq* #{:b 2})))
       (assert-eq "@seq()" (view (rest (lazy-seq* #[1])))))
     (if (: (tostring (setmetatable {} {:__name "foo"})) :match :foo)
         (testing "seq tostring"
@@ -86,8 +91,7 @@
         (assert-eq se {:a 42})))
     (testing "counting"
       (assert-eq 3 (length (seq [1 2 3])))
-      (assert-eq 3 (length (lazy-seq* #[1 2 3])))
-      (assert-eq 3 (length (seq [] 3))))
+      (assert-eq 3 (length (lazy-seq* #[1 2 3]))))
     (testing "iteration"
       (assert-eq [1 2 3 4 5]
                  (icollect [_ v (pairs (seq [1 2 3 4 5]))] v))
@@ -133,11 +137,8 @@
   (let [{: seq : seq-pack : seq-unpack} suit]
     (testing "packing seq"
       (assert-eq (seq-pack (seq [1 2 3]))
-                 {1 1 2 2 3 3 :n 3})
-      (assert-eq (seq-pack (seq [] 10))
-                 {:n 10}))
+                 {1 1 2 2 3 3 :n 3}))
     (testing "unpacking seq"
-      (assert-eq 10 (select "#" (seq-unpack (seq [] 10))))
       (assert-eq [1 2 3] [(seq-unpack (seq [1 2 3]))]))))
 
 (deftest "filter"

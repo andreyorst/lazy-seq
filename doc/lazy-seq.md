@@ -1,4 +1,4 @@
-# Lazy-seq.fnl (v0.0.1)
+# Lazy-seq.fnl (v0.0.2-dev)
 Lazy sequence library for Fennel and Lua.
 
 Most functions in this library return a so called lazy sequence.  The
@@ -36,10 +36,14 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`drop`](#drop)
 - [`every?`](#every)
 - [`filter`](#filter)
+- [`interleave`](#interleave)
+- [`interpose`](#interpose)
+- [`iter`](#iter)
 - [`keep`](#keep)
 - [`line-seq`](#line-seq)
 - [`map`](#map)
 - [`range`](#range)
+- [`repeat`](#repeat)
 - [`repeatedly`](#repeatedly)
 - [`some?`](#some)
 - [`take`](#take)
@@ -48,17 +52,11 @@ and `lazy-cat`.  These macros are provided for convenience only.
 Function signature:
 
 ```
-(seq s ...)
+(seq s)
 ```
 
 Construct a sequence out of a table or another sequence `s`.
-Returns `nil` if given an empty sequence.
-
-When `s` is a table accepts optional `size` argument for defining the
-length of the resulting sequence.  Since sequences can contain `nil`
-values, transforming packed table to a sequence is possible by passing
-the value of `n` key from such table.  Returns `nil` if given empty
-table.
+Returns `nil` if given an empty sequence or an empty table.
 
 Sequences are immutable and persistent, but their contents are not
 immutable, meaning that if a sequence contains mutable references, the
@@ -79,17 +77,6 @@ Transform sequential table to a sequence:
 (assert-eq nums [(seq-unpack num-seq)])
 ```
 
-Sequences can have nils as their values, so packed tables can be
-easily transformed to a sequence:
-
-``` fennel
-(local t (table.pack :a nil nil :b :c nil nil nil))
-(local s (seq t t.n))
-(local view (require :fennel.view))
-(assert-eq "@seq(\"a\" nil nil \"b\" \"c\" nil nil nil)"
-           (view s))
-```
-
 Iterating through a sequence:
 
 ```fennel
@@ -104,7 +91,6 @@ Iterating through a sequence:
 
 (assert-eq [5 4 3 2 1]
            [(seq-unpack (reverse s))])
-
 ```
 
 
@@ -264,6 +250,43 @@ Function signature:
 Returns a lazy sequence of the items in the `coll` for which `pred`
 returns logical true.
 
+## `interleave`
+Function signature:
+
+```
+(interleave ...)
+```
+
+Returns a lazy sequence of the first item in each sequence, then the
+second one, until any sequence exhausts.
+
+## `interpose`
+Function signature:
+
+```
+(interpose separator coll)
+```
+
+Returns a lazy sequence of the elements of `coll` separated by `separator`.
+
+## `iter`
+Function signature:
+
+```
+(iter s)
+```
+
+Transform sequence `s` to a stateful iterator going over its elements.
+
+Provides a safer* iterator that only returns values of a sequence
+without the sequence tail. Returns `nil` when no elements left.
+Automatically converts its argument to a sequence by calling `seq` on
+it.
+
+(* Accidental realization of a tail of an
+infinite sequence can freeze your program and eat all memory, as the
+sequence is infinite.)
+
 ## `keep`
 Function signature:
 
@@ -360,6 +383,23 @@ Various ranges:
 (range 4 8) ;; => @seq(4 5 6 7)
 (range 0 -5 -2) ;; => @seq(0 -2 -4)
 (take 10 (range)) ;; => @seq(0 1 2 3 4 5 6 7 8 9)
+```
+
+## `repeat`
+Function signature:
+
+```
+(repeat x)
+```
+
+Takes a value `x` and returns an infinite lazy sequence of this value.
+
+### Examples
+
+``` fennel
+(assert-eq 10 (accumulate [res 0
+                           _ x (pairs (take 10 (repeat 1)))]
+                (+ res x)))
 ```
 
 ## `repeatedly`

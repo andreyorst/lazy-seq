@@ -1,3 +1,4 @@
+(local {: view} (require :fennel))
 (var seq nil)                    ; forward declaration of seq function
 
 (fn first [s]
@@ -99,16 +100,12 @@ Second element must be either a table or a sequence, or nil."
                                       res)))
                       :__fennelview pp-seq})))
 
-(set seq
-     (fn [s ...]
-       "Construct a sequence out of a table or another sequence `s`.
-Returns `nil` if given an empty sequence.
+(var table-to-cons-iter nil)
 
-When `s` is a table, accepts optional `size` argument for defining the
-length of the resulting sequence.  Since sequences can contain `nil`
-values, transforming packed table to a sequence is possible by passing
-the value of `n` key from such table.  Returns `nil` if given an empty
-table.
+(set seq
+     (fn [s]
+       "Construct a sequence out of a table or another sequence `s`.
+Returns `nil` if given an empty sequence or an empty table.
 
 Sequences are immutable and persistent, but their contents are not
 immutable, meaning that if a sequence contains mutable references, the
@@ -127,17 +124,6 @@ Transform sequential table to a sequence:
 (local num-seq (seq nums))
 
 (assert-eq nums [(seq-unpack num-seq)])
-```
-
-Sequences can have nils as their values, so packed tables can be
-easily transformed to a sequence:
-
-``` fennel
-(local t (table.pack :a nil nil :b :c nil nil nil))
-(local s (seq t t.n))
-(local view (require :fennel.view))
-(assert-eq \"@seq(\\\"a\\\" nil nil \\\"b\\\" \\\"c\\\" nil nil nil)\"
-           (view s))
 ```
 
 Iterating through a sequence:
@@ -163,15 +149,7 @@ Sequences can also be created manually by using `cons` function."
          :lazy-cons (seq (realize s))
          :empty-cons nil
          :nil nil
-         ;; TODO: think thru how to support associative data
-         ;;       structures and user-defined table-based data
-         ;;       structures.  Maybe even not do a shallow copy, but
-         ;;       wrap a `pairs` iterator
-         :table (let [(size) ...]
-                  (var res nil)
-                  (for [i (or size (length s)) 1 -1]
-                    (set res (cons (. s i) res)))
-                  res)
+         :table (table-to-cons-iter s)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
 (fn lazy-seq* [f]
@@ -192,6 +170,32 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__name "lazy cons"
                              :__eq (fn [s1 s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
+
+(fn assoc? [t]
+  (let [len (length t)
+        (nxt t* k) (pairs t)]
+    (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
+        (> len 0) :seq
+        :empty)))
+
+(set table-to-cons-iter
+     (fn [t]
+       (match (assoc? t)
+         :assoc (let [(nxt t k) (pairs t)
+                      get-next (fn get-next [nxt t k]
+                                 (let [(k v) (nxt t k)]
+                                   (if (not= nil k)
+                                       (cons [k v] (lazy-seq* #(get-next nxt t k)))
+                                       empty-cons)))]
+                  (get-next nxt t k))
+         :seq (let [(nxt t i) (ipairs t)
+                    get-next (fn get-next [nxt t i]
+                               (let [(i v) (nxt t i)]
+                                 (if (not= nil i)
+                                     (cons v (lazy-seq* #(get-next nxt t i)))
+                                     empty-cons)))]
+                (get-next nxt t i))
+         :empty nil)))
 
 (fn every? [pred coll]
   "Check if `pred` is true for every element of a sequence `coll`."

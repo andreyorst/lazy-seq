@@ -1,4 +1,4 @@
-# Macros.fnl (v0.0.1)
+# Macros.fnl (v0.0.2-dev)
 Macros for creating lazy sequences.
 
 **Table of contents**
