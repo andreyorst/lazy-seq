@@ -118,7 +118,7 @@ Second element must be either a table or a sequence, or nil."
                                       res)))
                       :__fennelview pp-seq})))
 
-(var table-to-cons-iter nil)
+(var cons-iter nil)
 
 (global utf8 _G.utf8)
 
@@ -169,13 +169,8 @@ Sequences can also be created manually by using `cons` function."
          :lazy-cons (seq (realize s))
          :empty-cons nil
          :nil nil
-         :table (table-to-cons-iter s)
-         :string (table-to-cons-iter (if utf8
-                                         (let [char utf8.char]
-                                           (icollect [_ b (utf8.codes s)]
-                                             (char b)))
-                                         (icollect [b (s:gmatch ".")]
-                                           b)))
+         :table (cons-iter s)
+         :string (cons-iter s)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
 (fn lazy-seq* [f]
@@ -198,13 +193,16 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__lazy-seq/type :lazy-cons})))
 
 (fn kind [t]
-  (let [len (length* t)
-        (nxt t* k) (pairs t)]
-    (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
-        (> len 0) :seq
-        :empty)))
+  (match (type t)
+    :table (let [len (length* t)
+                 (nxt t* k) (pairs t)]
+             (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
+                 (> len 0) :seq
+                 :empty))
+    :string :string
+    _ :else))
 
-(set table-to-cons-iter
+(set cons-iter
      (fn [t]
        (match (kind t)
          :assoc ((fn wrap [nxt t k]
@@ -219,6 +217,14 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                        (cons v (lazy-seq* #(wrap nxt t i)))
                        empty-cons)))
                (ipairs t))
+         :string (let [char (if utf8 utf8.char string.char)]
+                   ((fn wrap [nxt t i]
+                      (let [(i v) (nxt t i)]
+                        (if (not= nil i)
+                            (cons (char v) (lazy-seq* #(wrap nxt t i)))
+                            empty-cons)))
+                    (if utf8 (utf8.codes t)
+                        (ipairs [(string.byte t 1 (length t))]))))
          :empty nil)))
 
 (fn every? [pred coll]
