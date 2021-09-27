@@ -98,7 +98,8 @@
       (assert-not (pcall cons 1 2))
       (assert-is (cons 1 nil))
       (assert-is (cons 1 []))
-      (assert-is (cons 1 (cons nil nil))))))
+      (assert-is (cons 1 (cons nil nil)))
+      (assert-is (cons 1 "foo")))))
 
 (deftest "sequences"
   (let [{: lazy-seq* : dorun : seq : first : rest : cons} suit]

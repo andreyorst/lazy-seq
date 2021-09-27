@@ -1,8 +1,12 @@
-(local {: view} (require :fennel))
-(var seq nil)                    ; forward declaration of seq function
+;; forward declarations
+(var seq nil)
+(var cons-iter nil)
+
+;; Lua 5.1 compatibility layer
 
 (local lua-pairs pairs)
 (local lua-ipairs ipairs)
+(global utf8 _G.utf8)
 
 (fn pairs [t]
   (match (getmetatable t)
@@ -83,6 +87,7 @@ If the sequence is empty, returns nil."
    :empty-cons true
    :lazy-cons true
    :nil true
+   :string true
    :table true})
 
 (fn cons [...]
@@ -118,9 +123,7 @@ Second element must be either a table or a sequence, or nil."
                                       res)))
                       :__fennelview pp-seq})))
 
-(var cons-iter nil)
 
-(global utf8 _G.utf8)
 
 (set seq
      (fn [s]
