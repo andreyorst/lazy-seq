@@ -366,10 +366,14 @@ items of the `coll`."
 ```"
   ((fn step [x] (lazy-seq* #(cons x (step x)))) x))
 
+(fn pack [...]
+  (doto [...] (tset :n (select "#" ...))))
+
 (fn repeatedly [f ...]
   "Takes a function `f` and returns an infinite lazy sequence of
 function applications.  Rest arguments are passed to the function."
-  (let [f (partial f ...)]
+  (let [args (pack ...)
+        f (fn [] (f (unpack args 1 args.n)))]
     ((fn step [f] (lazy-seq* #(cons (f) (step f)))) f)))
 
 ;;; Range

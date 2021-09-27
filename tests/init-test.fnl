@@ -254,7 +254,10 @@
   (let [{: repeatedly : take} suit]
     (testing "repeating a function call"
       (assert-eq [42 42 42 42 42 42 42 42 42 42]
-                 (->vec (take 10 (repeatedly #42)))))))
+                 (->vec (take 10 (repeatedly #42)))))
+    (testing "repeating a function call with additional arguments"
+      (assert-eq [[1 2 3] [1 2 3] [1 2 3]]
+                 (->vec (take 3 (repeatedly #[$...] 1 2 3)))))))
 
 (deftest "range"
   (let [{: range : take} suit]
