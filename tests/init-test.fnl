@@ -23,6 +23,16 @@
   (icollect [_ x (pairs s)]
     x))
 
+(fn lua53-eq? []
+  ;; detect if __eq metamethods work as in Lua 5.2. e.g. doesn't have
+  ;; to be identical functions
+  (= (setmetatable {} {:__eq #true}) {}))
+
+(fn lua53-tostring? []
+  ;; detect if __name is supported by tostring
+  (let [s (-> {} (setmetatable {:__name "foo"}) tostring)]
+    (= (s:match :foo) :foo)))
+
 (deftest "seq"
   (let [{: seq : rest} suit]
     (testing "creating seqs from tables"
@@ -50,17 +60,16 @@
       (assert-eq "@seq([\"b\" 2])" (view (lazy-seq* #{:b 2})))
       (assert-eq "@seq()" (view (rest (lazy-seq* #[1]))))
       (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (lazy-seq* #"char"))))
-    (if (: (tostring (setmetatable {} {:__name "foo"})) :match :foo)
-        (testing "seq tostring"
-          (assert-is (: (tostring (seq [1])) :match "cons"))
-          (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
-          (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
-          (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))
+    (if (lua53-tostring?)
+     (testing "seq tostring"
+       (assert-is (: (tostring (seq [1])) :match "cons"))
+       (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
+       (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
+       (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))
         (io.stderr:write "info: Skipping tostring test\n"))))
 
 (deftest "equality"
-  (if (= (setmetatable {} {:__eq (fn [a b] (rawequal a b))})
-         (setmetatable {} {:__eq (fn [a b] (rawequal a b))}))
+  (if (lua53-eq?)
       (let [{: seq : take : range : drop : map} suit]
         (testing "comparing seqs"
           (assert-is (= (seq [1 2 3]) (seq [1 2 3])))
