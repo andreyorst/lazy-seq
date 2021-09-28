@@ -1,11 +1,8 @@
-;; forward declarations
-(var seq nil)
-(var cons-iter nil)
-
 ;; Lua 5.1 compatibility layer
 
 (local lua-pairs pairs)
 (local lua-ipairs ipairs)
+(local lua-next next)
 (global utf8 _G.utf8)
 
 (fn pairs [t]
@@ -23,6 +20,17 @@
     {:__len l} (l t)
     _ (length t)))
 
+(fn table-pack [...]
+  (doto [...] (tset :n (select "#" ...))))
+
+(local table-unpack
+  (or table.unpack _G.unpack))
+
+;; seq
+
+(var seq nil)
+(var cons-iter nil)
+
 (fn first [s]
   "Return first element of a sequence."
   (match (seq s)
@@ -37,7 +45,7 @@
                      :__newindex #(error "cons cell is immutable")
                      :__index #nil
                      :__name "cons"
-                     :__pairs #(values next [] nil)
+                     :__pairs #(values lua-next [] nil)
                      :__eq (fn [s1 s2] (rawequal s1 s2))
                      :__call #(if $2 nil e)})))
 
@@ -60,7 +68,7 @@ If the sequence is empty, returns empty sequence."
     :lazy-cons (c))
   c)
 
-(fn next* [s]
+(fn next [s]
   "Return the tail of a sequence.
 
 If the sequence is empty, returns nil."
@@ -70,7 +78,7 @@ If the sequence is empty, returns nil."
 
 (fn view-seq [list options view indent elements]
   (table.insert elements (view (first list) options indent))
-  (let [tail (next* list)]
+  (let [tail (next list)]
     (when (= :cons (gettype tail))
       (view-seq tail options view indent elements)))
   elements)
@@ -103,17 +111,17 @@ Second element must be either a table or a sequence, or nil."
                       :__index #(if (> $2 0)
                                     (do (var (s i) (values $ 1))
                                         (while (and (not= i $2) s)
-                                          (set (s i) (values (next* s) (+ i 1))))
+                                          (set (s i) (values (next s) (+ i 1))))
                                         (first s))
                                     nil)
                       :__newindex #(error "cons cell is immutable")
                       :__len #(do (var (s len) (values $ 0))
                                   (while s
-                                    (set (s len) (values (next* s) (+ len 1))))
+                                    (set (s len) (values (next s) (+ len 1))))
                                   len)
                       :__pairs #(values (fn [_ s]
                                           (if (not= empty-cons s)
-                                              (let [tail (next* s)]
+                                              (let [tail (next s)]
                                                 (match (gettype tail)
                                                   :cons (values tail (first s))
                                                   _ (values empty-cons (first s))))
@@ -126,12 +134,10 @@ Second element must be either a table or a sequence, or nil."
                                   (do (var (s1 s2 res) (values s1 s2 true))
                                       (while (and res s1 s2)
                                         (set res (= (first s1) (first s2)))
-                                        (set s1 (next* s1))
-                                        (set s2 (next* s2)))
+                                        (set s1 (next s1))
+                                        (set s2 (next s2)))
                                       res)))
                       :__fennelview pp-seq})))
-
-
 
 (set seq
      (fn [s]
@@ -154,7 +160,7 @@ Transform sequential table to a sequence:
 (local nums [1 2 3 4 5])
 (local num-seq (seq nums))
 
-(assert-eq nums [(seq-unpack num-seq)])
+(assert-eq nums [(unpack num-seq)])
 ```
 
 Iterating through a sequence:
@@ -170,7 +176,7 @@ Iterating through a sequence:
    s nil))
 
 (assert-eq [5 4 3 2 1]
-           [(seq-unpack (reverse s))])
+           [(unpack (reverse s))])
 ```
 
 
@@ -184,7 +190,7 @@ Sequences can also be created manually by using `cons` function."
          :string (cons-iter s)
          _ (error (: "expected table or sequence, got %s" :format _) 2))))
 
-(fn lazy-seq* [f]
+(fn lazy-seq [f]
   "Create lazy sequence from the result of calling a function `f`.
 Delays execution of `f` until sequence is consumed.
 
@@ -221,20 +227,20 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
          :assoc ((fn wrap [nxt t k]
                    (let [(k v) (nxt t k)]
                      (if (not= nil k)
-                         (cons [k v] (lazy-seq* #(wrap nxt t k)))
+                         (cons [k v] (lazy-seq #(wrap nxt t k)))
                          empty-cons)))
                  (pairs t))
          :seq ((fn wrap [nxt t i]
                  (let [(i v) (nxt t i)]
                    (if (not= nil i)
-                       (cons v (lazy-seq* #(wrap nxt t i)))
+                       (cons v (lazy-seq #(wrap nxt t i)))
                        empty-cons)))
                (ipairs t))
          :string (let [char (if utf8 utf8.char string.char)]
                    ((fn wrap [nxt t i]
                       (let [(i v) (nxt t i)]
                         (if (not= nil i)
-                            (cons (char v) (lazy-seq* #(wrap nxt t i)))
+                            (cons (char v) (lazy-seq #(wrap nxt t i)))
                             empty-cons)))
                     (if utf8 (utf8.codes t)
                         (ipairs [(string.byte t 1 (length t))]))))
@@ -244,7 +250,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
   "Check if `pred` is true for every element of a sequence `coll`."
   (match (seq coll)
     s (if (pred (first s))
-          (match (next* s)
+          (match (next s)
             r (every? pred r)
             _ true)
           false)
@@ -255,12 +261,12 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 `coll`."
   (match (seq coll)
     s (or (pred (first s))
-          (match (next* s)
+          (match (next s)
             r (some? pred r)
             _ nil))
     _ nil))
 
-(fn seq-pack [s]
+(fn pack [s]
   "Pack sequence into sequential table with size indication."
   (let [res []]
     (var n 0)
@@ -269,20 +275,19 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
       (tset res n v))
     (doto res (tset :n n))))
 
-(local unpack (or table.unpack _G.unpack))
-(fn seq-unpack [s]
+(fn unpack [s]
   "Unpack sequence items to multiple values."
-  (let [t (seq-pack s)]
-    (unpack t 1 t.n)))
+  (let [t (pack s)]
+    (table-unpack t 1 t.n)))
 
 (fn concat [...]
   "Return a lazy sequence of concatenated sequences."
   (match (select "#" ...)
-    0 (lazy-seq* #nil)
+    0 (lazy-seq #nil)
     1 (let [(x) ...]
-        (lazy-seq* #x))
+        (lazy-seq #x))
     2 (let [(x y) ...]
-        (lazy-seq* #(match (seq x)
+        (lazy-seq #(match (seq x)
                      s (cons (first s) (concat (rest s) y))
                      nil y)))
     _ (concat (concat (pick-values 2 ...)) (select 3 ...))))
@@ -295,29 +300,29 @@ Returns lazy sequence.
 
 ```fennel
 (map #(+ $ 1) [1 2 3]) ;; => @seq(2 3 4)
-(local res (map #(+ $ 1) [:a :b :c])) ;; will blow up when realized
+(local res (map #(+ $ 1) [:a :b :c])) ;; will raise an error only when realized
 ```"
   (match (select "#" ...)
     0 nil
     1 (let [(col) ...]
-        (lazy-seq* #(match (seq col)
+        (lazy-seq #(match (seq col)
                      x (cons (f (first x)) (map f (seq (rest x))))
                      _ nil)))
     2 (let [(s1 s2) ...]
-        (lazy-seq* #(let [s1 (seq s1) s2 (seq s2)]
+        (lazy-seq #(let [s1 (seq s1) s2 (seq s2)]
                      (if (and s1 s2)
                          (cons (f (first s1) (first s2)) (map f (rest s1) (rest s2)))
                          nil))))
     3 (let [(s1 s2 s3) ...]
-        (lazy-seq* #(let [s1 (seq s1) s2 (seq s2) s3 (seq s3)]
+        (lazy-seq #(let [s1 (seq s1) s2 (seq s2) s3 (seq s3)]
                      (if (and s1 s2 s3)
                          (cons (f (first s1) (first s2) (first s3))
                                (map f (rest s1) (rest s2) (rest s3)))
                          nil))))
     _ (let [s (seq [...] (select "#" ...))]
-        (lazy-seq* #(if (every? #(not= nil (seq $)) s)
-                       (cons (f (seq-unpack (map first s)))
-                             (map f (seq-unpack (map rest s))))
+        (lazy-seq #(if (every? #(not= nil (seq $)) s)
+                       (cons (f (unpack (map first s)))
+                             (map f (unpack (map rest s))))
                        nil)))))
 
 (fn take [n coll]
@@ -332,7 +337,7 @@ Take 10 element from a sequential table
 (take 10 [1 2 3]) ;=> @seq(1 2 3)
 (take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
 ```"
-  (lazy-seq* #(if (> n 0)
+  (lazy-seq #(if (> n 0)
                  (match (seq coll)
                    s (cons (first s) (take (- n 1) (rest s)))
                    _ nil)
@@ -346,12 +351,12 @@ of remaining elements."
                  (if (and (> n 0) s)
                      (step (- n 1) (rest s))
                      s)))]
-    (lazy-seq* #(step n coll))))
+    (lazy-seq #(step n coll))))
 
 (fn filter [pred coll]
   "Returns a lazy sequence of the items in the `coll` for which `pred`
 returns logical true."
-  (lazy-seq*
+  (lazy-seq
    #(match (seq coll)
       s (let [x (first s) r (rest s)]
           (if (pred x)
@@ -362,7 +367,7 @@ returns logical true."
 (fn keep [f coll]
   "Returns a lazy sequence of the non-nil results of calling `f` on the
 items of the `coll`."
-  (lazy-seq* #(match (seq coll)
+  (lazy-seq #(match (seq coll)
                s (match (f (first s))
                    x (cons x (keep f (rest s)))
                    nil (keep f (rest s)))
@@ -371,7 +376,7 @@ items of the `coll`."
 (fn cycle [coll]
   "Create a lazy infinite sequence of repetitions of the items in the
 `coll`."
-  (lazy-seq* #(concat (seq coll) (cycle coll))))
+  (lazy-seq #(concat (seq coll) (cycle coll))))
 
 (fn repeat [x]
   "Takes a value `x` and returns an infinite lazy sequence of this value.
@@ -383,32 +388,34 @@ items of the `coll`."
                            _ x (pairs (take 10 (repeat 1)))]
                 (+ res x)))
 ```"
-  ((fn step [x] (lazy-seq* #(cons x (step x)))) x))
-
-(fn pack [...]
-  (doto [...] (tset :n (select "#" ...))))
+  ((fn step [x] (lazy-seq #(cons x (step x)))) x))
 
 (fn repeatedly [f ...]
   "Takes a function `f` and returns an infinite lazy sequence of
 function applications.  Rest arguments are passed to the function."
-  (let [args (pack ...)
-        f (fn [] (f (unpack args 1 args.n)))]
-    ((fn step [f] (lazy-seq* #(cons (f) (step f)))) f)))
+  (let [args (table-pack ...)
+        f (fn [] (f (table-unpack args 1 args.n)))]
+    ((fn step [f] (lazy-seq #(cons (f) (step f)))) f)))
+
+(fn iterate [f x]
+  "Returns an infinete lazy sequence of x, (f x), (f (f x)) etc."
+  (let [x* (f x)]
+    (cons x (lazy-seq #(iterate f x*)))))
 
 ;;; Range
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
-  (lazy-seq* #(cons x (inf-range (+ x step) step))))
+  (lazy-seq #(cons x (inf-range (+ x step) step))))
 
 (fn fix-range [x end step]
   ;; fixed lazy range builder
-  (lazy-seq* #(if (or (and (>= step 0) (< x end))
-                      (and (< step 0) (> x end)))
-                  (cons x (fix-range (+ x step) end step))
-                  (and (= step 0) (not= x end))
-                  (cons x (fix-range x end step))
-                  nil)))
+  (lazy-seq #(if (or (and (>= step 0) (< x end))
+                     (and (< step 0) (> x end)))
+                 (cons x (fix-range (+ x step) end step))
+                 (and (= step 0) (not= x end))
+                 (cons x (fix-range x end step))
+                 nil)))
 
 (fn range [...]
   "Create a possibly infinite sequence of numbers.
@@ -440,14 +447,12 @@ Various ranges:
 ;;; Utils
 
 (fn realized? [s]
-  "Check if sequence is fully realized."
-  (var (s realized not-done) (values s true true))
-  (while (and not-done s)
-    (match (gettype s)
-      :lazy-cons (set (realized not-done) (values false false))
-      :empty-cons (set (realized not-done) (values true false))
-      _ (set s (rest s))))
-  realized)
+  "Check if sequence's first element is realized."
+  (match (gettype s)
+    :lazy-cons false
+    :empty-cons true
+    :cons true
+    _ (error (: "expected a sequence, got: %s" :format _))))
 
 (fn dorun [s]
   "Realize whole sequence for side effects.
@@ -455,7 +460,7 @@ Various ranges:
 Walks whole sequence, realizing each cell.  Use at your own risk on
 infinite sequences."
   (match (seq s)
-    s* (dorun (next* s*))
+    s* (dorun (next s*))
     _ nil))
 
 (fn doall [s]
@@ -484,7 +489,7 @@ truncated before the file is closed:
               (line-seq f))]
   ;; this errors because only first line was realized, but the file
   ;; was closed before the rest of lines were cached
-  (assert-not (pcall next* lines)))
+  (assert-not (pcall next lines)))
 ```
 
 Sequence is realized with `doall` before file was closed and can be shared:
@@ -492,7 +497,7 @@ Sequence is realized with `doall` before file was closed and can be shared:
 ``` fennel
 (let [lines (with-open [f (io.open \"init.fnl\" :r)]
               (doall (line-seq f)))]
-  (assert-is (pcall next* lines)))
+  (assert-is (pcall next lines)))
 ```
 
 Infinite files can't be fully realized, but can be partially realized
@@ -501,13 +506,13 @@ with `take`:
 ``` fennel
 (let [lines (with-open [f (io.open \"/dev/urandom\" :r)]
               (doall (take 3 (line-seq f))))]
-  (assert-is (pcall next* lines)))
+  (assert-is (pcall next lines)))
 ```"
   (let [next-line (file:lines)]
     ((fn step [f]
        (let [line (f)]
          (if (= :string (type line))
-             (cons line (lazy-seq* #(step f)))
+             (cons line (lazy-seq #(step f)))
              nil)))
      next-line)))
 
@@ -533,21 +538,21 @@ sequence is infinite.)"
 second one, until any sequence exhausts."
   (match (values (select "#" ...) ...)
     (0) empty-cons
-    (1 ?s) (lazy-seq* #?s)
+    (1 ?s) (lazy-seq #?s)
     (2 ?s1 ?s2)
-    (lazy-seq* #(let [s1 (seq ?s1)
-                      s2 (seq ?s2)]
-                  (if (and s1 s2)
-                      (cons (first s1)
-                            (cons (first s2)
-                                  (interleave (rest s1) (rest s2))))
-                      nil)))
+    (lazy-seq #(let [s1 (seq ?s1)
+                     s2 (seq ?s2)]
+                 (if (and s1 s2)
+                     (cons (first s1)
+                           (cons (first s2)
+                                 (interleave (rest s1) (rest s2))))
+                     nil)))
     (_)
     (let [cols (seq [...] (select "#" ...))]
-      (lazy-seq* #(let [seqs (map seq cols)]
-                    (if (every? #(not= nil (seq $)) seqs)
-                        (concat (map first seqs)
-                                (interleave (seq-unpack (map rest seqs))))))))))
+      (lazy-seq #(let [seqs (map seq cols)]
+                   (if (every? #(not= nil (seq $)) seqs)
+                       (concat (map first seqs)
+                               (interleave (unpack (map rest seqs))))))))))
 
 (fn interpose [separator coll]
   "Returns a lazy sequence of the elements of `coll` separated by `separator`."
@@ -556,14 +561,15 @@ second one, until any sequence exhausts."
 (setmetatable
  {: first
   : rest
-  : next*
+  : next
   : cons
   : seq
-  : lazy-seq*
+  : lazy-seq
+  : list
   : every?
   : some?
-  : seq-pack
-  : seq-unpack
+  : pack
+  : unpack
   : concat
   : map
   : take

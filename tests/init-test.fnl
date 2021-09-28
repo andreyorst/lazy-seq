@@ -47,7 +47,7 @@
       (assert-eq nil (seq (rest (seq {:a 1})))))))
 
 (deftest "printing sequences"
-  (let [{: seq : lazy-seq* : rest} suit
+  (let [{: seq : lazy-seq : rest} suit
         view (require :fennel.view)]
     (testing "seq pretty-printing"
       (assert-eq "@seq(1)" (view (seq [1])))
@@ -55,17 +55,17 @@
       (assert-eq "@seq([\"a\" 1])" (view (seq {:a 1})))
       (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (seq "char")))
       (assert-eq "@seq()" (view (rest (seq [1]))))
-      (assert-eq "@seq(1)" (view (lazy-seq* #[1])))
-      (assert-eq "@seq(1 2 3)" (view (lazy-seq* #[1 2 3])))
-      (assert-eq "@seq([\"b\" 2])" (view (lazy-seq* #{:b 2})))
-      (assert-eq "@seq()" (view (rest (lazy-seq* #[1]))))
-      (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (lazy-seq* #"char"))))
+      (assert-eq "@seq(1)" (view (lazy-seq #[1])))
+      (assert-eq "@seq(1 2 3)" (view (lazy-seq #[1 2 3])))
+      (assert-eq "@seq([\"b\" 2])" (view (lazy-seq #{:b 2})))
+      (assert-eq "@seq()" (view (rest (lazy-seq #[1]))))
+      (assert-eq "@seq(\"c\" \"h\" \"a\" \"r\")" (view (lazy-seq #"char"))))
     (if (lua53-tostring?)
      (testing "seq tostring"
        (assert-is (: (tostring (seq [1])) :match "cons"))
        (assert-is (: (tostring (rest (seq [1]))) :match "cons"))
-       (assert-is (: (tostring (lazy-seq* #[1])) :match "lazy cons"))
-       (assert-is (: (tostring (rest (lazy-seq* #[1]))) :match "cons")))
+       (assert-is (: (tostring (lazy-seq #[1])) :match "lazy cons"))
+       (assert-is (: (tostring (rest (lazy-seq #[1]))) :match "cons")))
         (io.stderr:write "info: Skipping tostring test\n"))))
 
 (deftest "equality"
@@ -90,13 +90,14 @@
       (io.stderr:write "info: Skipping equality test\n")))
 
 (deftest "indexing"
-  (let [{: range : realized?} suit]
+  (let [{: range : realized? : drop} suit]
     (testing "destructuring"
-      (let [[_ a b c] (range 10)]
-        (assert-eq 6 (+ a b c))))
+      (let [[_ a b c & rest] (range 10)]
+        (assert-eq 6 (+ a b c))
+        (assert-eq [4 5 6 7 8 9] rest)))
     (testing "destructuring doesn't realize whole collection"
       (let [[_ a b c &as r] (range 10)]
-        (assert-not (realized? r))))))
+        (assert-not (realized? (drop 4 r)))))))
 
 (deftest "conses"
   (let [{: cons} suit]
@@ -111,7 +112,7 @@
       (assert-is (cons 1 "foo")))))
 
 (deftest "sequences"
-  (let [{: lazy-seq* : dorun : seq : first : rest : cons} suit]
+  (let [{: lazy-seq : dorun : seq : first : rest : cons} suit]
     (testing "seq returns nil"
       (assert-eq nil (seq nil))
       (assert-eq nil (seq []))
@@ -119,25 +120,25 @@
       (assert-eq nil (first nil)))
     (testing "lazy-seq returns lazy "
       (let [se {}
-            s (lazy-seq* #(tset se :a 42) [1 2 3])]
+            s (lazy-seq #(tset se :a 42) [1 2 3])]
         (assert-eq se {})
         (dorun s)
         (assert-eq se {:a 42})))
     (testing "lazy-seq realized on printing"
       (let [se {}
-            s (lazy-seq* #(tset se :a 42) [1 2 3])]
+            s (lazy-seq #(tset se :a 42) [1 2 3])]
         (assert-eq se {})
         ((require :fennel.view) s)
         (assert-eq se {:a 42})))
     (testing "counting"
       (assert-eq 3 (length* (seq [1 2 3])))
-      (assert-eq 3 (length* (lazy-seq* #[1 2 3]))))
+      (assert-eq 3 (length* (lazy-seq #[1 2 3]))))
     (testing "iteration"
       (assert-eq [1 2 3 4 5]
                  (icollect [_ v (pairs (seq [1 2 3 4 5]))] v))
       (assert-eq [1 2 3 4 5]
-                 (icollect [_ v (pairs (lazy-seq* #[1 2 3 4 5]))] v))
-      (global s (lazy-seq* #(cons 1 s)))
+                 (icollect [_ v (pairs (lazy-seq #[1 2 3 4 5]))] v))
+      (global s (lazy-seq #(cons 1 s)))
       (var i 0)
       (assert-eq [1 1 1 1 1]
                  (icollect [_ v (pairs s) :until (= i 5)]
@@ -174,12 +175,12 @@
                  [[:a :b :c :x] [:d :e :f :y]]))))
 
 (deftest "seq packing/unpacking"
-  (let [{: seq : seq-pack : seq-unpack} suit]
+  (let [{: seq : pack : unpack} suit]
     (testing "packing seq"
-      (assert-eq (seq-pack (seq [1 2 3]))
+      (assert-eq (pack (seq [1 2 3]))
                  {1 1 2 2 3 3 :n 3}))
     (testing "unpacking seq"
-      (assert-eq [1 2 3] [(seq-unpack (seq [1 2 3]))]))))
+      (assert-eq [1 2 3] [(unpack (seq [1 2 3]))]))))
 
 (deftest "filter"
   (let [{: filter : seq : take : range} suit]
@@ -209,7 +210,7 @@
                    (->vec (take 5 (keep #(= 0 (% $ 2)) (range)))))))))
 
 (deftest "concat"
-  (let [{: concat : lazy-seq* : range : take} suit]
+  (let [{: concat : lazy-seq : range : take} suit]
     (testing "concat arities"
       (assert-is (concat))
       (assert-eq [1 2] (->vec (concat [1] [2])))
@@ -218,16 +219,16 @@
       (assert-eq [1 2 3 4 5] (->vec (concat [1] [2] [3] [4] [5]))))
     (testing "concat is lazy"
       (let [se []
-            c1 (concat (lazy-seq* #(do (table.insert se 1) [1])))
-            c2 (concat (lazy-seq* #(do (table.insert se 1) [1]))
-                       (lazy-seq* #(do (table.insert se 2) [2])))
-            c3 (concat (lazy-seq* #(do (table.insert se 1) [1]))
-                       (lazy-seq* #(do (table.insert se 2) [2]))
-                       (lazy-seq* #(do (table.insert se 3) [3])))
-            c4 (concat (lazy-seq* #(do (table.insert se 1) [1]))
-                       (lazy-seq* #(do (table.insert se 2) [2]))
-                       (lazy-seq* #(do (table.insert se 3) [3]))
-                       (lazy-seq* #(do (table.insert se 4) [4])))]
+            c1 (concat (lazy-seq #(do (table.insert se 1) [1])))
+            c2 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2])))
+            c3 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2]))
+                       (lazy-seq #(do (table.insert se 3) [3])))
+            c4 (concat (lazy-seq #(do (table.insert se 1) [1]))
+                       (lazy-seq #(do (table.insert se 2) [2]))
+                       (lazy-seq #(do (table.insert se 3) [3]))
+                       (lazy-seq #(do (table.insert se 4) [4])))]
         (assert-eq se [])
         (assert-eq [1] (->vec c1))
         (assert-eq se [1])
@@ -298,18 +299,18 @@
       (assert-eq (->vec (range 0 0 0)) []))))
 
 (deftest "realized?"
-  (let [{: realized? : lazy-seq* : range : doall} suit]
+  (let [{: realized? : lazy-seq : range : doall} suit]
     (testing "realized?"
       (assert-is (realized? (doall (range 10))))
-      (assert-not (realized? (lazy-seq* #nil))))))
+      (assert-not (realized? (lazy-seq #nil))))))
 
 (deftest "doall and dorun"
-  (let [{: doall : dorun : map : seq : seq-pack} suit]
+  (let [{: doall : dorun : map : seq : pack} suit]
     (testing "doall"
       (let [se []
             s (map #(table.insert se $) [1 2 3])]
         (assert-eq se [])
-        (assert-eq {:n 3} (seq-pack (doall s)))
+        (assert-eq {:n 3} (pack (doall s)))
         (assert-eq se [1 2 3])))
     (testing "dorun"
       (let [se []
@@ -331,25 +332,25 @@
                    se)))))
 
 (deftest "iter"
-  (let [{: iter : seq : lazy-seq*} suit]
+  (let [{: iter : seq : lazy-seq} suit]
     (testing "iterator over sequences"
       (let [s (seq [1 2 3])]
         (assert-eq [1 2 3] (icollect [x (iter s)] x)))
-      (let [s (lazy-seq* #[1 2 3])]
+      (let [s (lazy-seq #[1 2 3])]
         (assert-eq [1 2 3] (icollect [x (iter s)] x))))))
 
 (deftest "interleave"
-  (let [{: interleave : lazy-seq* : rest} suit]
+  (let [{: interleave : lazy-seq : rest} suit]
     (testing "interleave"
       (assert-eq (rest [1]) (interleave))
       (assert-eq [1 2 3] (->vec (interleave [1 2 3])))
       (assert-eq [1 4 2 5 3 6] (->vec (interleave [1 2 3] [4 5 6])))
       (assert-eq [1 4 7 2 5 8 3 6 9] (->vec (interleave [1 2 3] [4 5 6] [7 8 9])))
       (assert-eq [1 4 7] (->vec (interleave [1 2 3] [4 5 6] [7])))
-      (assert-eq [1 4 2 5 3 6] (->vec (interleave (lazy-seq* #[1 2 3]) (lazy-seq* #[4 5 6])))))))
+      (assert-eq [1 4 2 5 3 6] (->vec (interleave (lazy-seq #[1 2 3]) (lazy-seq #[4 5 6])))))))
 
 (deftest "interpose"
-  (let [{: interpose : lazy-seq*} suit]
+  (let [{: interpose : lazy-seq} suit]
     (testing "interpose"
       (assert-eq [1 0 2 0 3] (->vec (interpose 0 [1 2 3])))
-      (assert-eq [1 0 2 0 3] (->vec (interpose 0 (lazy-seq* #[1 2 3])))))))
+      (assert-eq [1 0 2 0 3] (->vec (interpose 0 (lazy-seq #[1 2 3])))))))
