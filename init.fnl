@@ -594,6 +594,7 @@ second one, until any sequence exhausts."
   : cycle
   : repeat
   : repeatedly
+  : iterate
   : range
   : realized?
   : dorun
