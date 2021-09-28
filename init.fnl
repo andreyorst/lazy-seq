@@ -34,7 +34,8 @@
     (setmetatable e {:__len #0
                      :__fennelview #"@seq()"
                      :__lazy-seq/type :empty-cons
-                     :__newindex #nil
+                     :__newindex #(error "cons cell is immutable")
+                     :__index #nil
                      :__name "cons"
                      :__pairs #(values next [] nil)
                      :__eq (fn [s1 s2] (rawequal s1 s2))
@@ -99,6 +100,13 @@ Second element must be either a table or a sequence, or nil."
             "expected nil, cons or table as a tail")
     (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
                       :__lazy-seq/type :cons
+                      :__index #(if (> $2 0)
+                                    (do (var (s i) (values $ 1))
+                                        (while (and (not= i $2) s)
+                                          (set (s i) (values (next* s) (+ i 1))))
+                                        (first s))
+                                    nil)
+                      :__newindex #(error "cons cell is immutable")
                       :__len #(do (var (s len) (values $ 0))
                                   (while s
                                     (set (s len) (values (next* s) (+ len 1))))
@@ -188,6 +196,8 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                         (setmetatable lazy-cons (getmetatable s))
                         (setmetatable lazy-cons (getmetatable empty-cons)))))]
     (setmetatable lazy-cons {:__call #((realize) $2)
+                             :__index #(. (realize) $2)
+                             :__newindex #(error "cons cell is immutable")
                              :__fennelview #((. (getmetatable (realize)) :__fennelview) $...)
                              :__len #(length* (realize))
                              :__pairs #(pairs (realize))
@@ -430,15 +440,14 @@ Various ranges:
 ;;; Utils
 
 (fn realized? [s]
-  "Check if sequence is fully realized.
-
-Use at your own risk on infinite sequences."
-  (var (s not-done) (values s true))
+  "Check if sequence is fully realized."
+  (var (s realized not-done) (values s true true))
   (while (and not-done s)
-    (if (= :lazy-cons (gettype s))
-        (set not-done false)
-        (set s (seq (rest s)))))
-  not-done)
+    (match (gettype s)
+      :lazy-cons (set (realized not-done) (values false false))
+      :empty-cons (set (realized not-done) (values true false))
+      _ (set s (rest s))))
+  realized)
 
 (fn dorun [s]
   "Realize whole sequence for side effects.

@@ -89,6 +89,15 @@
           (assert-eq (take 3 (range)) [0 1 2])))
       (io.stderr:write "info: Skipping equality test\n")))
 
+(deftest "indexing"
+  (let [{: range : realized?} suit]
+    (testing "destructuring"
+      (let [[_ a b c] (range 10)]
+        (assert-eq 6 (+ a b c))))
+    (testing "destructuring doesn't realize whole collection"
+      (let [[_ a b c &as r] (range 10)]
+        (assert-not (realized? r))))))
+
 (deftest "conses"
   (let [{: cons} suit]
     (testing "cons arity"
@@ -289,9 +298,9 @@
       (assert-eq (->vec (range 0 0 0)) []))))
 
 (deftest "realized?"
-  (let [{: realized? : lazy-seq*} suit]
+  (let [{: realized? : lazy-seq* : range : doall} suit]
     (testing "realized?"
-      (assert-is (realized? [1 2 3]))
+      (assert-is (realized? (doall (range 10))))
       (assert-not (realized? (lazy-seq* #nil))))))
 
 (deftest "doall and dorun"
