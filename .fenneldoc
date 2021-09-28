@@ -25,18 +25,19 @@
                                 "cons"
                                 "first"
                                 "rest"
-                                "next*"
-                                "lazy-seq*"
+                                "next"
+                                "lazy-seq"
+                                "list"
                                 "dorun"
                                 "doall"
                                 "realized?"
-                                "seq-pack"
-                                "seq-unpack"]}
+                                "pack"
+                                "unpack"]}
  :project-license "[MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)"
  :project-version "v0.0.2-dev"
  :sandbox false
  :test-requirements {:init-macros.fnl "(require-macros :fennel-test.test)
                                        (require-macros :init-macros)
-                                       (local {: cons : map : take : seq-unpack : range : rest : drop : first} (require :init))"
+                                       (local {: cons : map : take : range : rest : drop : first : unpack} (require :init))"
                      :init.fnl "(require-macros :fennel-test.test)"}
  :toc true}

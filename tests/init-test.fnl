@@ -24,9 +24,14 @@
     x))
 
 (fn lua53-eq? []
-  ;; detect if __eq metamethods work as in Lua 5.2. e.g. doesn't have
+  ;; detect if __eq metamethods work as in Lua 5.3. e.g. doesn't have
   ;; to be identical functions
   (= (setmetatable {} {:__eq #true}) {}))
+
+(fn lua53-unpack? []
+  ;; detect if __len metamethods work as in Lua 5.3. e.g. is used in
+  ;; unpacking
+  (= 3 (select "#" ((or table.unpack _G.unpack) (setmetatable {} {:__len #3})))))
 
 (fn lua53-tostring? []
   ;; detect if __name is supported by tostring
@@ -94,7 +99,9 @@
     (testing "destructuring"
       (let [[_ a b c & rest] (range 10)]
         (assert-eq 6 (+ a b c))
-        (assert-eq [4 5 6 7 8 9] rest)))
+        (if (lua53-unpack?)
+            (assert-eq [4 5 6 7 8 9] rest)
+            (io.stderr:write "info: Skipping destructuring rest packing test\n"))))
     (testing "destructuring doesn't realize whole collection"
       (let [[_ a b c &as r] (range 10)]
         (assert-not (realized? (drop 4 r)))))))

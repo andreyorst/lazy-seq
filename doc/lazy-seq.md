@@ -24,13 +24,14 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`cons`](#cons)
 - [`first`](#first)
 - [`rest`](#rest)
-- [`next*`](#next)
-- [`lazy-seq*`](#lazy-seq)
+- [`next`](#next)
+- [`lazy-seq`](#lazy-seq)
+- [`list`](#list)
 - [`dorun`](#dorun)
 - [`doall`](#doall)
 - [`realized?`](#realized)
-- [`seq-pack`](#seq-pack)
-- [`seq-unpack`](#seq-unpack)
+- [`pack`](#pack)
+- [`unpack`](#unpack)
 - [`concat`](#concat)
 - [`cycle`](#cycle)
 - [`drop`](#drop)
@@ -74,7 +75,7 @@ Transform sequential table to a sequence:
 (local nums [1 2 3 4 5])
 (local num-seq (seq nums))
 
-(assert-eq nums [(seq-unpack num-seq)])
+(assert-eq nums [(unpack num-seq)])
 ```
 
 Iterating through a sequence:
@@ -90,7 +91,7 @@ Iterating through a sequence:
    s nil))
 
 (assert-eq [5 4 3 2 1]
-           [(seq-unpack (reverse s))])
+           [(unpack (reverse s))])
 ```
 
 
@@ -126,28 +127,44 @@ Return the tail of a sequence.
 
 If the sequence is empty, returns empty sequence.
 
-## `next*`
+## `next`
 Function signature:
 
 ```
-(next* s)
+(next s)
 ```
 
 Return the tail of a sequence.
 
 If the sequence is empty, returns nil.
 
-## `lazy-seq*`
+## `lazy-seq`
 Function signature:
 
 ```
-(lazy-seq* f)
+(lazy-seq f)
 ```
 
 Create lazy sequence from the result of calling a function `f`.
 Delays execution of `f` until sequence is consumed.
 
 See `lazy-seq` macro from init-macros.fnl for more convenient usage.
+
+## `list`
+Function signature:
+
+```
+(list ...)
+```
+
+Create eager sequence of provided values.
+
+### Examples
+
+``` fennel
+(local l (list 1 2 3 4 5))
+(assert-eq [1 2 3 4 5] [(unpack l)])
+```
 
 ## `dorun`
 Function signature:
@@ -180,24 +197,22 @@ Function signature:
 (realized? s)
 ```
 
-Check if sequence is fully realized.
+Check if sequence's first element is realized.
 
-Use at your own risk on infinite sequences.
-
-## `seq-pack`
+## `pack`
 Function signature:
 
 ```
-(seq-pack s)
+(pack s)
 ```
 
 Pack sequence into sequential table with size indication.
 
-## `seq-unpack`
+## `unpack`
 Function signature:
 
 ```
-(seq-unpack s)
+(unpack s)
 ```
 
 Unpack sequence items to multiple values.
@@ -322,7 +337,7 @@ truncated before the file is closed:
               (line-seq f))]
   ;; this errors because only first line was realized, but the file
   ;; was closed before the rest of lines were cached
-  (assert-not (pcall next* lines)))
+  (assert-not (pcall next lines)))
 ```
 
 Sequence is realized with `doall` before file was closed and can be shared:
@@ -330,7 +345,7 @@ Sequence is realized with `doall` before file was closed and can be shared:
 ``` fennel
 (let [lines (with-open [f (io.open "init.fnl" :r)]
               (doall (line-seq f)))]
-  (assert-is (pcall next* lines)))
+  (assert-is (pcall next lines)))
 ```
 
 Infinite files can't be fully realized, but can be partially realized
@@ -339,7 +354,7 @@ with `take`:
 ``` fennel
 (let [lines (with-open [f (io.open "/dev/urandom" :r)]
               (doall (take 3 (line-seq f))))]
-  (assert-is (pcall next* lines)))
+  (assert-is (pcall next lines)))
 ```
 
 ## `map`
@@ -356,7 +371,7 @@ Returns lazy sequence.
 
 ```fennel
 (map #(+ $ 1) [1 2 3]) ;; => @seq(2 3 4)
-(local res (map #(+ $ 1) [:a :b :c])) ;; will blow up when realized
+(local res (map #(+ $ 1) [:a :b :c])) ;; will raise an error only when realized
 ```
 
 ## `range`

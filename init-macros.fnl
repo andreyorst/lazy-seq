@@ -7,7 +7,7 @@
   "Create lazy sequence from the result provided by running the body.
 Delays the execution until the resulting sequence is consumed.
 
-Same as `lazy-seq*`, but doesn't require wrapping the body into an
+Same as `lazy-seq`, but doesn't require wrapping the body into an
 anonymous function.
 
 # Examples
@@ -18,7 +18,7 @@ Infinite* sequence of Fibonacci numbers:
 (local fib ((fn fib [a b] (lazy-seq (cons a (fib b (+ a b))))) 0 1))
 
 (assert-eq [0 1 1 2 3 5 8]
-           [(seq-unpack (take 7 fib))])
+           [(unpack (take 7 fib))])
 ```
 
 *Sequence itself is infinite, but the numbers are limited to Lua's VM
@@ -40,7 +40,7 @@ arbitrary precision math libraries like lbc or lmapm:
              (first (drop 3000 fib))))
 
 ```"
-  `(let [{:lazy-seq* lazy-seq#} (require ,lseq)]
+  `(let [{:lazy-seq lazy-seq#} (require ,lseq)]
      (lazy-seq# (fn [] ,...))))
 
 (fn lazy-cat [...]
@@ -53,7 +53,7 @@ Lazily concatenate finite sequence with infinite:
 ```fennel
 (local r (lazy-cat (take 10 (range)) (drop 10 (range))))
 (assert-eq [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14]
-           [(seq-unpack (take 15 r))])
+           [(unpack (take 15 r))])
 ```
 
 Another Fibonacci sequence variant:
@@ -62,9 +62,9 @@ Another Fibonacci sequence variant:
 (global fib (lazy-cat [0 1] (map #(+ $1 $2) (rest fib) fib)))
 
 (assert-eq [0 1 1 2 3 5 8]
-           [(seq-unpack (take 7 fib))])
+           [(unpack (take 7 fib))])
 ```"
-  `(let [{:concat concat# :lazy-seq* lazy-seq#} (require ,lseq)]
+  `(let [{:concat concat# :lazy-seq lazy-seq#} (require ,lseq)]
      (concat# ,(unpack (icollect [_ s (ipairs [...])]
                          `(lazy-seq# (fn [] ,s)))))))
 
