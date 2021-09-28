@@ -211,6 +211,21 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__eq (fn [s1 s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
 
+(fn list [...]
+  "Create eager sequence of provided values.
+
+# Examples
+
+``` fennel
+(local l (list 1 2 3 4 5))
+(assert-eq [1 2 3 4 5] [(unpack l)])
+```"
+  (let [args (table-pack ...)]
+    (var l empty-cons)
+    (for [i args.n 1 -1]
+      (set l (cons (. args i) l)))
+    l))
+
 (fn kind [t]
   (match (type t)
     :table (let [len (length* t)
