@@ -31,7 +31,7 @@
 (fn lua53-unpack? []
   ;; detect if __len metamethods work as in Lua 5.3. e.g. is used in
   ;; unpacking
-  (= 3 (select "#" ((or table.unpack _G.unpack) (setmetatable {} {:__len #3})))))
+  (= 1 ((or table.unpack _G.unpack) (setmetatable {} {:__index [1] :__len #1}))))
 
 (fn lua53-tostring? []
   ;; detect if __name is supported by tostring
