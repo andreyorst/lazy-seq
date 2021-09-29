@@ -1,3 +1,5 @@
+(local lazy {})
+
 ;; Lua 5.1 compatibility layer
 
 (local lua-pairs pairs)
@@ -290,6 +292,12 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
       (tset res n v))
     (doto res (tset :n n))))
 
+(fn count [s]
+  "Count amount of elements in the sequence."
+  (match (seq s)
+    s* (length* s*)
+    _ 0))
+
 (fn unpack [s]
   "Unpack sequence items to multiple values."
   (let [t (pack s)]
@@ -306,6 +314,13 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                      s (cons (first s) (concat (rest s) y))
                      nil y)))
     _ (concat (concat (pick-values 2 ...)) (select 3 ...))))
+
+(fn reverse [s]
+  "Returns an eager reversed sequence."
+  ((fn helper [s res]
+     (match (seq s)
+       s* (helper (rest s) (cons (first s) res))
+       _ res)) s empty-cons))
 
 (fn map [f ...]
   "Map function `f` over every element of a collection `col`.
@@ -340,6 +355,29 @@ Returns lazy sequence.
                              (map f (unpack (map rest s))))
                        nil)))))
 
+(fn map-indexed [f coll]
+  "Returns a lazy sequence consisting of the result of applying f to 1
+and the first item of coll, followed by applying f to 2 and the second
+item in coll, etc, until coll is exhausted. Thus function f should
+accept 2 arguments, index and item."
+  (let [mapi (fn mapi [idx coll]
+               (lazy-seq
+                #(match (seq coll)
+                   s (cons (f idx (first s)) (mapi (+ idx 1) (rest s)))
+                   _ nil)))]
+    (mapi 1 coll)))
+
+(fn mapcat [f ...]
+  "Apply `concat` to the result of calling `map` with `f` and
+collections."
+  (let [step (fn step [colls]
+               (lazy-seq
+                #(match (seq colls)
+                   s (let [c (first s)]
+                       (concat c (step (rest colls))))
+                   _ nil)))]
+    (step (map f ...))))
+
 (fn take [n coll]
   "Take `n` elements from the collection `coll`.
 Returns a lazy sequence of specified amount of elements.
@@ -358,6 +396,16 @@ Take 10 element from a sequential table
                    _ nil)
                  nil)))
 
+(fn take-while [pred coll]
+  "Take the elements from the collection `coll` until `pred` returns logical
+false for any of the elemnts.  Returns a lazy sequence."
+  (lazy-seq #(match (seq coll)
+               s (let [v (first s)]
+                   (if (pred v)
+                       (cons v (take-while pred (rest s)))
+                       nil))
+               _ nil)))
+
 (fn drop [n coll]
   "Drop `n` elements from collection `coll`, returning a lazy sequence
 of remaining elements."
@@ -367,6 +415,46 @@ of remaining elements."
                      (step (- n 1) (rest s))
                      s)))]
     (lazy-seq #(step n coll))))
+
+(fn drop-while [pred coll]
+  "Drop the elements from the collection `coll` until `pred` returns logical
+false for any of the elemnts.  Returns a lazy sequence."
+  (let [step (fn [pred coll]
+               (let [s (seq coll)]
+                 (if (and s (pred (first s)))
+                     (step pred (rest s))
+                     s)))]
+    (lazy-seq #(step pred coll))))
+
+(fn drop-last [...]
+  "Return a lazy sequence from `coll` without last `n` elements."
+  (match (select "#" ...)
+    0 empty-cons
+    1 (drop-last 1 ...)
+    _ (let [(n coll) ...]
+        (map (fn [x] x) coll (drop n coll)))))
+
+(fn take-last [n coll]
+  "Return a sequence of last `n` elements of the `coll`."
+  ((fn loop [s lead]
+     (if lead
+         (loop (next s) (next lead))
+         s)) (seq coll) (seq (drop n coll))))
+
+(fn take-nth [n coll]
+  "Return a lazy sequence of every `n` item in `coll`."
+  (lazy-seq
+   #(match (seq coll)
+      s (cons (first s) (take-nth n (drop n s))))))
+
+(fn split-at [n coll]
+  "Return a table with sequence `coll` being split at `n`"
+  [(take n coll) (drop n coll)])
+
+(fn split-with [pred coll]
+  "Return a table with sequence `coll` being split with `pred`"
+  [(take-while pred coll) (drop-while pred coll)])
+
 
 (fn filter [pred coll]
   "Returns a lazy sequence of the items in the `coll` for which `pred`
@@ -387,6 +475,24 @@ items of the `coll`."
                    x (cons x (keep f (rest s)))
                    nil (keep f (rest s)))
                _ nil)))
+
+(fn keep-indexed [f coll]
+  "Returns a lazy sequence of the non-nil results of (f index item) in
+the `coll`.  Note, this means false return values will be included.
+`f` must be free of side-effects."
+  (let [keepi (fn keepi [idx coll]
+                (lazy-seq
+                 #(match (seq coll)
+                    s (let [x (f idx (first s))]
+                        (if (= nil x)
+                            (keepi (+ 1 idx) (rest s))
+                            (cons x (keepi (+ 1 idx) (rest s))))))))]
+    (keepi 1 coll)))
+
+(fn remove [pred coll]
+  "Returns a lazy sequence of the items in the `coll` without elements
+for wich `pred` returns logical true."
+  (filter #(not (pred $)) coll))
 
 (fn cycle [coll]
   "Create a lazy infinite sequence of repetitions of the items in the
@@ -417,7 +523,118 @@ function applications.  Rest arguments are passed to the function."
   (let [x* (f x)]
     (cons x (lazy-seq #(iterate f x*)))))
 
-;;; Range
+(fn nthnext [coll n]
+  "Returns the nth next of `coll`, (seq coll) when `n` is 0."
+  ((fn loop [n xs]
+     (match (and xs (> n 0))
+       false xs
+       xs* (loop (- n 1) (next xs*))
+       _ xs)) n (seq coll)))
+
+(fn nthrest [coll n]
+  "Returns the nth rest of `coll`, `coll` when `n` is 0."
+  ((fn loop [n xs]
+     (match (and (> n 0) (seq xs))
+       false xs
+       xs* (loop (- n 1) (rest xs*))
+       _ xs)) n coll))
+
+(fn dorun [s]
+  "Realize whole sequence for side effects.
+
+Walks whole sequence, realizing each cell.  Use at your own risk on
+infinite sequences."
+  (match (seq s)
+    s* (dorun (next s*))
+    _ nil))
+
+(fn doall [s]
+  "Realize whole lazy sequence.
+
+Walks whole sequence, realizing each cell.  Use at your own risk on
+infinite sequences."
+  (doto s (dorun)))
+
+(fn partition [...]
+  (match (select "#" ...)
+    2 (let [(n coll) ...]
+        (partition n n coll))
+    3 (let [(n step coll) ...]
+        (lazy-seq
+         #(match (seq coll)
+            s (let [p (take n s)]
+                (if (= n (length* p))
+                    (cons p (partition n step (nthrest s step)))
+                    nil))
+            _ nil)))
+    4 (let [(n step pad coll) ...]
+        (lazy-seq
+         #(match (seq coll)
+            s (let [p (take n s)]
+                (if (= n (length* p))
+                    (cons p (partition n step pad (nthrest s step)))
+                    (list (take n (concat p pad)))))
+            _ nil)))))
+
+(fn partition-by [f coll]
+  "Applies `f` to each value in `coll`, splitting it each time `f`
+   returns a new value.  Returns a lazy seq of partitions."
+  (lazy-seq
+   #(match (seq coll)
+      s (let [v (first s)
+              fv (f v)
+              run  (cons f (take-while #(= fv (f $)) (next s)))]
+          (cons run (partition-by f (lazy-seq #(drop (length* run) s))))))))
+
+(fn partition-all [...]
+  "Returns a lazy sequence of lists like partition, but may include
+partitions with fewer than n items at the end."
+  (match (select "#" ...)
+    2 (let [(n coll) ...]
+        (partition n n coll))
+    3 (let [(n step coll) ...]
+        (lazy-seq
+         #(match (seq coll)
+            s (let [p (take n s)]
+                (cons p (partition n step (nthrest s step))))
+            _ nil)))))
+
+(fn reductions [...]
+  "Returns a lazy seq of the intermediate values of the reduction (as
+per reduce) of `coll` by `f`, starting with `init`."
+  (match (select "#" ...)
+    2 (let [(f coll) ...]
+        (lazy-seq
+         #(match (seq coll)
+            s (reductions f (first s) (rest s))
+            _ (list (f)))))
+    3 (let [(f init coll) ...]
+        (cons init
+              (lazy-seq
+               #(match (seq coll)
+                  s (reductions f (f init (first s)) (rest s))))))))
+
+(fn contains? [coll elt]
+  "Test if `elt` is in the `coll`."
+  ((fn loop [coll]
+     (match (seq coll)
+       s (if (= elt (first s))
+             true
+             (loop (rest s)))
+       nil false)) coll))
+
+(fn distinct [coll]
+  "Returns a lazy sequence of the elements of the `coll` without
+duplicates.  Comparison is done by equality."
+  ((fn step [xs seen]
+     (let [loop (fn loop [[f &as xs] seen]
+                  (match (seq xs)
+                    s (if (contains? seen f)
+                          (loop (rest s) seen)
+                          (cons f (step (rest s) (cons f seen))))
+                    _ nil))]
+       (lazy-seq #(loop xs seen))))
+   coll empty-cons))
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
@@ -459,8 +676,6 @@ Various ranges:
         (fix-range x end 1))
     _ (fix-range ...)))
 
-;;; Utils
-
 (fn realized? [s]
   "Check if sequence's first element is realized."
   (match (gettype s)
@@ -468,22 +683,6 @@ Various ranges:
     :empty-cons true
     :cons true
     _ (error (: "expected a sequence, got: %s" :format _))))
-
-(fn dorun [s]
-  "Realize whole sequence for side effects.
-
-Walks whole sequence, realizing each cell.  Use at your own risk on
-infinite sequences."
-  (match (seq s)
-    s* (dorun (next s*))
-    _ nil))
-
-(fn doall [s]
-  "Realize whole lazy sequence.
-
-Walks whole sequence, realizing each cell.  Use at your own risk on
-infinite sequences."
-  (doto s (dorun)))
 
 (fn line-seq [file]
   "Accepts a `file` handle, and creates a lazy sequence of lines using
@@ -530,6 +729,21 @@ with `take`:
              (cons line (lazy-seq #(step f)))
              nil)))
      next-line)))
+
+(fn tree-seq [branch? children root]
+  "Returns a lazy sequence of the nodes in a tree, via a depth-first walk.
+
+`branch?` must be a fn of one arg that returns true if passed a node
+that can have children (but may not).  `children` must be a fn of one
+arg that returns a sequence of the children.  Will only be called on
+nodes for which `branch?` returns true.  `root` is the root node of
+the tree."
+  ((fn walk [node]
+     (lazy-seq
+      #(cons node
+             (if (branch? node)
+                 (mapcat walk (children node))))))
+   root))
 
 (fn iter [s]
   "Transform sequence `s` to a stateful iterator going over its elements.
@@ -585,12 +799,27 @@ second one, until any sequence exhausts."
   : some?
   : pack
   : unpack
+  : count
   : concat
   : map
+  : map-indexed
+  : mapcat
   : take
+  : take-while
+  : take-last
   : drop
+  : drop-while
+  : drop-last
+  : split-at
+  : split-with
+  : partition
+  : partition-by
+  : partition-all
   : filter
   : keep
+  : keep-indexed
+  : contains?
+  : distinct
   : cycle
   : repeat
   : repeatedly
