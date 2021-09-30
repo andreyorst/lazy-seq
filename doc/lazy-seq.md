@@ -33,21 +33,36 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`pack`](#pack)
 - [`unpack`](#unpack)
 - [`concat`](#concat)
+- [`contains?`](#contains)
+- [`count`](#count)
 - [`cycle`](#cycle)
+- [`distinct`](#distinct)
 - [`drop`](#drop)
+- [`drop-last`](#drop-last)
+- [`drop-while`](#drop-while)
 - [`every?`](#every)
 - [`filter`](#filter)
 - [`interleave`](#interleave)
 - [`interpose`](#interpose)
 - [`iter`](#iter)
 - [`keep`](#keep)
+- [`keep-indexed`](#keep-indexed)
 - [`line-seq`](#line-seq)
 - [`map`](#map)
+- [`map-indexed`](#map-indexed)
+- [`mapcat`](#mapcat)
+- [`partition`](#partition)
+- [`partition-all`](#partition-all)
+- [`partition-by`](#partition-by)
 - [`range`](#range)
 - [`repeat`](#repeat)
 - [`repeatedly`](#repeatedly)
 - [`some?`](#some)
+- [`split-at`](#split-at)
+- [`split-with`](#split-with)
 - [`take`](#take)
+- [`take-last`](#take-last)
+- [`take-while`](#take-while)
 
 ## `seq`
 Function signature:
@@ -226,6 +241,24 @@ Function signature:
 
 Return a lazy sequence of concatenated sequences.
 
+## `contains?`
+Function signature:
+
+```
+(contains? coll elt)
+```
+
+Test if `elt` is in the `coll`.
+
+## `count`
+Function signature:
+
+```
+(count s)
+```
+
+Count amount of elements in the sequence.
+
 ## `cycle`
 Function signature:
 
@@ -236,6 +269,16 @@ Function signature:
 Create a lazy infinite sequence of repetitions of the items in the
 `coll`.
 
+## `distinct`
+Function signature:
+
+```
+(distinct coll)
+```
+
+Returns a lazy sequence of the elements of the `coll` without
+duplicates.  Comparison is done by equality.
+
 ## `drop`
 Function signature:
 
@@ -245,6 +288,25 @@ Function signature:
 
 Drop `n` elements from collection `coll`, returning a lazy sequence
 of remaining elements.
+
+## `drop-last`
+Function signature:
+
+```
+(drop-last ...)
+```
+
+Return a lazy sequence from `coll` without last `n` elements.
+
+## `drop-while`
+Function signature:
+
+```
+(drop-while pred coll)
+```
+
+Drop the elements from the collection `coll` until `pred` returns logical
+false for any of the elemnts.  Returns a lazy sequence.
 
 ## `every?`
 Function signature:
@@ -312,6 +374,17 @@ Function signature:
 Returns a lazy sequence of the non-nil results of calling `f` on the
 items of the `coll`.
 
+## `keep-indexed`
+Function signature:
+
+```
+(keep-indexed f coll)
+```
+
+Returns a lazy sequence of the non-nil results of (f index item) in
+the `coll`.  Note, this means false return values will be included.
+`f` must be free of side-effects.
+
 ## `line-seq`
 Function signature:
 
@@ -373,6 +446,61 @@ Returns lazy sequence.
 (map #(+ $ 1) [1 2 3]) ;; => @seq(2 3 4)
 (local res (map #(+ $ 1) [:a :b :c])) ;; will raise an error only when realized
 ```
+
+## `map-indexed`
+Function signature:
+
+```
+(map-indexed f coll)
+```
+
+Returns a lazy sequence consisting of the result of applying `f` to 1
+and the first item of `coll`, followed by applying `f` to 2 and the second
+item in `coll`, etc, until `coll` is exhausted.
+
+## `mapcat`
+Function signature:
+
+```
+(mapcat f ...)
+```
+
+Apply `concat` to the result of calling `map` with `f` and
+collections.
+
+## `partition`
+Function signature:
+
+```
+(partition ...)
+```
+
+Returns a lazy sequence of lists of `n` items each, at offsets `step`
+apart. If `step` is not supplied, defaults to `n`, i.e. the partitions do
+not overlap. If a `pad` collection is supplied, use its elements as
+necessary to complete last partition upto `n` items. In case there are
+not enough padding elements, return a partition with less than `n`
+items.
+
+## `partition-all`
+Function signature:
+
+```
+(partition-all ...)
+```
+
+Returns a lazy sequence of lists like partition, but may include
+partitions with fewer than n items at the end.
+
+## `partition-by`
+Function signature:
+
+```
+(partition-by f coll)
+```
+
+Applies `f` to each value in `coll`, splitting it each time `f`
+   returns a new value.  Returns a lazy seq of partitions.
 
 ## `range`
 Function signature:
@@ -437,6 +565,24 @@ Function signature:
 Check if `pred` returns logical true for any element of a sequence
 `coll`.
 
+## `split-at`
+Function signature:
+
+```
+(split-at n coll)
+```
+
+Return a table with sequence `coll` being split at `n`
+
+## `split-with`
+Function signature:
+
+```
+(split-with pred coll)
+```
+
+Return a table with sequence `coll` being split with `pred`
+
 ## `take`
 Function signature:
 
@@ -455,6 +601,25 @@ Take 10 element from a sequential table
 (take 10 [1 2 3]) ;=> @seq(1 2 3)
 (take 5 [1 2 3 4 5 6 7 8 9 10]) ;=> @seq(1 2 3 4 5)
 ```
+
+## `take-last`
+Function signature:
+
+```
+(take-last n coll)
+```
+
+Return a sequence of last `n` elements of the `coll`.
+
+## `take-while`
+Function signature:
+
+```
+(take-while pred coll)
+```
+
+Take the elements from the collection `coll` until `pred` returns logical
+false for any of the elemnts.  Returns a lazy sequence.
 
 
 ---

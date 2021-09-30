@@ -356,10 +356,9 @@ Returns lazy sequence.
                        nil)))))
 
 (fn map-indexed [f coll]
-  "Returns a lazy sequence consisting of the result of applying f to 1
-and the first item of coll, followed by applying f to 2 and the second
-item in coll, etc, until coll is exhausted. Thus function f should
-accept 2 arguments, index and item."
+  "Returns a lazy sequence consisting of the result of applying `f` to 1
+and the first item of `coll`, followed by applying `f` to 2 and the second
+item in `coll`, etc, until `coll` is exhausted."
   (let [mapi (fn mapi [idx coll]
                (lazy-seq
                 #(match (seq coll)
@@ -419,7 +418,7 @@ of remaining elements."
 (fn drop-while [pred coll]
   "Drop the elements from the collection `coll` until `pred` returns logical
 false for any of the elemnts.  Returns a lazy sequence."
-  (let [step (fn [pred coll]
+  (let [step (fn step [pred coll]
                (let [s (seq coll)]
                  (if (and s (pred (first s)))
                      (step pred (rest s))
@@ -556,6 +555,12 @@ infinite sequences."
   (doto s (dorun)))
 
 (fn partition [...]
+  "Returns a lazy sequence of lists of `n` items each, at offsets `step`
+apart. If `step` is not supplied, defaults to `n`, i.e. the partitions do
+not overlap. If a `pad` collection is supplied, use its elements as
+necessary to complete last partition upto `n` items. In case there are
+not enough padding elements, return a partition with less than `n`
+items."
   (match (select "#" ...)
     2 (let [(n coll) ...]
         (partition n n coll))
