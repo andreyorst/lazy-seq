@@ -236,7 +236,8 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
              (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
                  (> len 0) :seq
                  :empty))
-    :string :string
+    :string (let [len (if utf8 (utf8.len t) (length t))]
+              (if (> len 0) :string :empty))
     _ :else))
 
 (set cons-iter
@@ -260,7 +261,8 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                         (if (not= nil i)
                             (cons (char v) (lazy-seq #(wrap nxt t i)))
                             empty-cons)))
-                    (if utf8 (utf8.codes t)
+                    (if utf8
+                        (utf8.codes t)
                         (ipairs [(string.byte t 1 (length t))]))))
          :empty nil)))
 
@@ -829,6 +831,7 @@ second one, until any sequence exhausts."
   : cycle
   : repeat
   : repeatedly
+  : iterate
   : range
   : realized?
   : dorun
