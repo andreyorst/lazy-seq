@@ -361,3 +361,15 @@
     (testing "interpose"
       (assert-eq [1 0 2 0 3] (->vec (interpose 0 [1 2 3])))
       (assert-eq [1 0 2 0 3] (->vec (interpose 0 (lazy-seq #[1 2 3])))))))
+
+(deftest "partitions"
+  (let [{: partition : partition-all : partition-by : map} suit
+        vectorize #(->vec (map ->vec $))]
+    (testing "partition"
+      (testing "partition"
+        (assert-not (pcall partition))
+        (assert-not (pcall partition 1))
+        (assert-eq (vectorize (partition 1 [1 2 3 4])) [[1] [2] [3] [4]])
+        (assert-eq (vectorize (partition 1 2 [1 2 3 4])) [[1] [3]])
+        (assert-eq (vectorize (partition 3 2 [1 2 3 4 5])) [[1 2 3] [3 4 5]])
+        (assert-eq (vectorize (partition 3 3 [0 -1 -2 -3] [1 2 3 4])) [[1 2 3] [4 0 -1]])))))

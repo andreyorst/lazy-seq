@@ -1,5 +1,3 @@
-(local lazy {})
-
 ;; Lua 5.1 compatibility layer
 
 (local lua-pairs pairs)
@@ -64,6 +62,17 @@ If the sequence is empty, returns empty sequence."
     t t
     _ (type x)))
 
+(fn seq? [x]
+  "Check if object is a sequence."
+  (let [tp (gettype x)]
+    (or (= tp :cons)
+        (= tp :lazy-cons)
+        (= tp :empty-cons))))
+
+(fn empty? [x]
+  "Check if sequence is empty."
+  (not (seq x)))
+
 (fn realize [c]
   ;; force realize single cons cell
   (match (gettype c)
@@ -108,7 +117,7 @@ Second element must be either a table or a sequence, or nil."
   (let [(h t) ...
         tp (gettype t)]
     (assert (. allowed-types tp)
-            (: "expected nil, cons, string or table as a tail, got: %s" :format t))
+            (: "expected nil, cons, table, or string as a tail, got: %s" :format tp))
     (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
                       :__lazy-seq/type :cons
                       :__index #(if (> $2 0)
@@ -211,7 +220,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__len #(length* (realize))
                              :__pairs #(pairs (realize))
                              :__name "lazy cons"
-                             :__eq (fn [s1 s2] (= (realize) (seq s2)))
+                             :__eq (fn [_ s2] (= (realize) (seq s2)))
                              :__lazy-seq/type :lazy-cons})))
 
 (fn list [...]
@@ -322,7 +331,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
   "Returns an eager reversed sequence."
   ((fn helper [s res]
      (match (seq s)
-       s* (helper (rest s) (cons (first s) res))
+       s* (helper (rest s*) (cons (first s*) res))
        _ res)) s empty-cons))
 
 (fn map [f ...]
@@ -582,7 +591,8 @@ items."
                 (if (= n (length* p))
                     (cons p (partition n step pad (nthrest s step)))
                     (list (take n (concat p pad)))))
-            _ nil)))))
+            _ nil)))
+    _ (error "wrong amount arguments to 'partition'")))
 
 (fn partition-by [f coll]
   "Applies `f` to each value in `coll`, splitting it each time `f`
@@ -605,7 +615,8 @@ partitions with fewer than n items at the end."
          #(match (seq coll)
             s (let [p (take n s)]
                 (cons p (partition n step (nthrest s step))))
-            _ nil)))))
+            _ nil)))
+    _ (error "wrong amount arguments to 'partition-all'")))
 
 (fn reductions [...]
   "Returns a lazy seq of the intermediate values of the reduction (as
@@ -620,16 +631,22 @@ per reduce) of `coll` by `f`, starting with `init`."
         (cons init
               (lazy-seq
                #(match (seq coll)
-                  s (reductions f (f init (first s)) (rest s))))))))
+                  s (reductions f (f init (first s)) (rest s))))))
+    _ (error "wrong amount arguments to 'reductions'")))
 
 (fn contains? [coll elt]
-  "Test if `elt` is in the `coll`."
-  ((fn loop [coll]
-     (match (seq coll)
-       s (if (= elt (first s))
-             true
-             (loop (rest s)))
-       nil false)) coll))
+  "Test if `elt` is in the `coll`.  May be a linear search depending on the type of the collection."
+  (match (gettype coll)
+    :table (match (kind coll)
+             :seq (accumulate [res false _ v (ipairs coll) :until res]
+                    (if (= elt v) true false))
+             :assoc (if (. coll elt) true false))
+    _ ((fn loop [coll]
+         (match (seq coll)
+           s (if (= elt (first s))
+                 true
+                 (loop (rest s)))
+           nil false)) coll)))
 
 (fn distinct [coll]
   "Returns a lazy sequence of the elements of the `coll` without
@@ -637,12 +654,12 @@ duplicates.  Comparison is done by equality."
   ((fn step [xs seen]
      (let [loop (fn loop [[f &as xs] seen]
                   (match (seq xs)
-                    s (if (contains? seen f)
+                    s (if (. seen f)
                           (loop (rest s) seen)
-                          (cons f (step (rest s) (cons f seen))))
+                          (cons f (step (rest s) (doto seen (tset f true)))))
                     _ nil))]
        (lazy-seq #(loop xs seen))))
-   coll empty-cons))
+   coll {}))
 
 (fn inf-range [x step]
   ;; infinite lazy range builder
@@ -753,7 +770,7 @@ the tree."
                  (mapcat walk (children node))))))
    root))
 
-(fn iter [s]
+(fn to-iter [s]
   "Transform sequence `s` to a stateful iterator going over its elements.
 
 Provides a safer* iterator that only returns values of a sequence
@@ -799,8 +816,11 @@ second one, until any sequence exhausts."
  {: first
   : rest
   : next
+  : nthnext
   : cons
   : seq
+  : seq?
+  : empty?
   : lazy-seq
   : list
   : every?
@@ -818,6 +838,7 @@ second one, until any sequence exhausts."
   : drop
   : drop-while
   : drop-last
+  : remove
   : split-at
   : split-with
   : partition
@@ -837,7 +858,9 @@ second one, until any sequence exhausts."
   : dorun
   : doall
   : line-seq
-  : iter
+  : tree-seq
+  : reverse
+  : to-iter
   : interleave
   : interpose}
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
