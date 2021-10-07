@@ -105,9 +105,10 @@ If the sequence is empty, returns nil."
   "Construct a cons cell.
 Second element must be either a table or a sequence, or nil."
   (assert (= 2 (select "#" ...)) "expected two arguments for cons")
-  (let [(h t) ...]
-    (assert (. allowed-types (gettype t))
-            "expected nil, cons or table as a tail")
+  (let [(h t) ...
+        tp (gettype t)]
+    (assert (. allowed-types tp)
+            (: "expected nil, cons, string or table as a tail, got: %s" :format t))
     (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
                       :__lazy-seq/type :cons
                       :__index #(if (> $2 0)
@@ -306,7 +307,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 (fn concat [...]
   "Return a lazy sequence of concatenated sequences."
   (match (select "#" ...)
-    0 (lazy-seq #nil)
+    0 empty-cons
     1 (let [(x) ...]
         (lazy-seq #x))
     2 (let [(x y) ...]
