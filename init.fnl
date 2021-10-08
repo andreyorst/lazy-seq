@@ -199,7 +199,7 @@ Sequences can also be created manually by using `cons` function."
          :nil nil
          :table (cons-iter s)
          :string (cons-iter s)
-         _ (error (: "expected table or sequence, got %s" :format _) 2))))
+         _ (error (: "expected table, string or sequence, got %s" :format _) 2))))
 
 (fn lazy-seq [f]
   "Create lazy sequence from the result of calling a function `f`.
@@ -536,18 +536,18 @@ function applications.  Rest arguments are passed to the function."
 (fn nthnext [coll n]
   "Returns the nth next of `coll`, (seq coll) when `n` is 0."
   ((fn loop [n xs]
-     (match (and xs (> n 0))
-       false xs
-       xs* (loop (- n 1) (next xs*))
-       _ xs)) n (seq coll)))
+     (match xs
+       (where xs* (> n 0)) (loop (- n 1) (next xs*))
+       _ xs))
+   n (seq coll)))
 
 (fn nthrest [coll n]
   "Returns the nth rest of `coll`, `coll` when `n` is 0."
   ((fn loop [n xs]
-     (match (and (> n 0) (seq xs))
-       false xs
-       xs* (loop (- n 1) (rest xs*))
-       _ xs)) n coll))
+     (match (seq xs)
+       (where xs* (> n 0)) (loop (- n 1) (rest xs*))
+       _ xs))
+   n coll))
 
 (fn dorun [s]
   "Realize whole sequence for side effects.
@@ -814,6 +814,7 @@ second one, until any sequence exhausts."
 (setmetatable
  {: first
   : rest
+  : nthrest
   : next
   : nthnext
   : cons

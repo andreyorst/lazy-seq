@@ -40,18 +40,110 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(deftest "conses"
+  (let [{: cons} suit]
+    (testing "cons expects table, string, nil or seq"
+      (assert-not (pcall cons 1 2))
+      (assert-is (cons 1 nil))
+      (assert-is (cons 1 []))
+      (assert-is (cons 1 (cons nil nil)))
+      (assert-is (cons 1 "foo")))
+    (testing "general consing"
+      (assert-eq (->vec (cons 1 nil)) [1])
+      (assert-eq (->vec (cons 1 [])) [1])
+      (assert-eq (->vec (cons 1 [2])) [1 2])
+      (assert-eq (->vec (cons 1 [2])) [1 2])
+      (assert-eq (->vec (cons 1 "abc")) [1 "a" "b" "c"])
+      (assert-eq (->vec (cons 1 (cons 2 (cons 3 (cons 4 nil))))) [1 2 3 4]))))
+
+
+(deftest "first"
+  (let [{: first : cons} suit]
+    (testing "first"
+      (assert-eq (first []) nil)
+      (assert-eq (first [1 2 3]) 1)
+      (assert-eq (first "a") "a")
+      (assert-eq (first (cons 1 (cons 2 nil))) 1))))
+
+
+(deftest "rest"
+  (let [{: rest : cons} suit]
+    (testing "rest"
+      (assert-eq (->vec (rest [])) [])
+      (assert-eq (->vec (rest [1 2 3])) [2 3])
+      (assert-eq (->vec (rest "abc")) ["b" "c"])
+      (assert-eq (->vec (rest (cons 1 (cons 2 nil)))) [2]))
+    (testing "rest retunrs empty-cons for empty sequences"
+      (assert-eq (->vec (rest [])) [])
+      (assert-eq (->vec (rest "")) [])
+      (assert-eq (->vec (rest (rest (cons nil nil)))) []))))
+
+
+(deftest "nthrest"
+  (let [{: nthrest} suit]
+    (testing "nthrest"
+      (assert-eq (->vec (nthrest [1 2 3] 2)) [3])
+      (assert-eq (->vec (nthrest [1 2 3] 3)) []))))
+
+
+(deftest "next"
+  (let [{:next snext : rest : cons} suit]
+    (testing "next returns nil for empty sequences"
+      (assert-eq (snext []) nil)
+      (assert-eq (snext "") nil)
+      (assert-eq (snext (rest (cons nil nil))) nil))))
+
+
+(deftest "nthnext"
+  (let [{: nthnext} suit]
+    (testing "nthnext"
+      (assert-eq (->vec (nthnext [1 2 3] 2)) [3])
+      (assert-eq (nthnext [1 2 3] 3) nil))))
+
+
+(deftest "list"
+  (let [{: list} suit]
+    (testing "list"
+      (assert-eq (->vec (list)) [])
+      (assert-eq (->vec (list 1 2 3 4 5)) [1 2 3 4 5]))))
+
+
 (deftest "seq"
   (let [{: seq : rest} suit]
     (testing "creating seqs from tables"
       (assert-is (seq [1 2 3]))
-      (assert-is (seq {:a 1 :b 2}))
-      (assert-is "foo"))
+      (assert-is (seq {:a 1 :b 2})))
+    (testing "creating seqs from strings"
+      (assert-eq (->vec (seq "foo")) ["f" "o" "o"])
+      (if _G.utf8
+          (assert-eq (->vec (seq "ваыв")) ["в" "а" "ы" "в"])
+          (assert-eq (->vec (seq "ваыв"))
+                     (icollect [_ c (ipairs [208 178 208 176 209 139 208 178])]
+                       (string.char c)))))
     (testing "invalid args"
       (assert-not (pcall seq 10)))
     (testing "empty seq returns nil"
       (assert-eq nil (seq []))
       (assert-eq nil (seq (rest (seq [1]))))
       (assert-eq nil (seq (rest (seq {:a 1})))))))
+
+
+(deftest "seq?"
+  (let [{: seq? : seq : list : cons : lazy-seq} suit]
+    (testing "seq?"
+      (assert-is (seq? (seq [1])))
+      (assert-not (seq? (seq [])))
+      (assert-is (seq? (cons 1 [2])))
+      (assert-is (seq? (list 1 2 3)))
+      (assert-is (seq? (lazy-seq #[1 2 3]))))))
+
+
+(deftest "empty?"
+  (let [{: empty? : seq : list} suit]
+    (assert-is (empty? []))
+    (assert-is (empty? (list)))
+    (assert-not (empty? (list 1 2 3)))
+    (assert-not (empty? (seq [1 2 3])))))
 
 
 (deftest "printing sequences"
@@ -110,16 +202,6 @@
     (testing "destructuring doesn't realize whole collection"
       (let [[_ a b c &as r] (range 10)]
         (assert-not (realized? (drop 4 r)))))))
-
-
-(deftest "conses"
-  (let [{: cons} suit]
-    (testing "cons expects table, nil or seq"
-      (assert-not (pcall cons 1 2))
-      (assert-is (cons 1 nil))
-      (assert-is (cons 1 []))
-      (assert-is (cons 1 (cons nil nil)))
-      (assert-is (cons 1 "foo")))))
 
 
 (deftest "sequences"
