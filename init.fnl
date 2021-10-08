@@ -113,7 +113,6 @@ If the sequence is empty, returns nil."
 (fn cons [...]
   "Construct a cons cell.
 Second element must be either a table or a sequence, or nil."
-  (assert (= 2 (select "#" ...)) "expected two arguments for cons")
   (let [(h t) ...
         tp (gettype t)]
     (assert (. allowed-types tp)
@@ -153,7 +152,7 @@ Second element must be either a table or a sequence, or nil."
 
 (set seq
      (fn [s]
-       "Construct a sequence out of a table or another sequence `s`.
+       "Construct a sequence out of a table, string or another sequence `s`.
 Returns `nil` if given an empty sequence or an empty table.
 
 Sequences are immutable and persistent, but their contents are not
