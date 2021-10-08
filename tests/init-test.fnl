@@ -338,13 +338,13 @@
         (assert-eq [42 42 42 42 42 42 42 42 42 42]
                    se)))))
 
-(deftest "iter"
-  (let [{: iter : seq : lazy-seq} suit]
+(deftest "to-iter"
+  (let [{: to-iter : seq : lazy-seq} suit]
     (testing "iterator over sequences"
       (let [s (seq [1 2 3])]
-        (assert-eq [1 2 3] (icollect [x (iter s)] x)))
+        (assert-eq [1 2 3] (icollect [x (to-iter s)] x)))
       (let [s (lazy-seq #[1 2 3])]
-        (assert-eq [1 2 3] (icollect [x (iter s)] x))))))
+        (assert-eq [1 2 3] (icollect [x (to-iter s)] x))))))
 
 (deftest "interleave"
   (let [{: interleave : lazy-seq : rest} suit]
