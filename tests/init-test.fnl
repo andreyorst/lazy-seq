@@ -169,6 +169,81 @@
         (io.stderr:write "info: Skipping tostring test\n"))))
 
 
+(deftest "take"
+  (let [{: take : list : lazy-seq} suit]
+    (testing "take"
+      (assert-eq [1 2 3] (->vec (take 3 [1 2 3 4])))
+      (assert-eq [1 2 3] (->vec (take 3 (list 1 2 3 4)))))
+    (testing "take is lazy"
+      (let [se []
+            s (take 3 (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [1 2 3] (->vec s))
+        (assert-eq se [1])))))
+
+
+(deftest "take-while"
+  (let [{: take-while : list : lazy-seq} suit]
+    (testing "take-while"
+      (assert-eq [1 2 3] (->vec (take-while #(< $ 4) [1 2 3 4])))
+      (assert-eq [1 2 3] (->vec (take-while #(< $ 4) (list 1 2 3 4)))))
+    (testing "take is lazy"
+      (let [se []
+            s (take-while #(< $ 4) (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [1 2 3] (->vec s))
+        (assert-eq se [1])))))
+
+
+(deftest "take-last"
+  (let [{: take-last : list : lazy-seq} suit]
+    (testing "take-last"
+      (assert-eq [2 3 4] (->vec (take-last 3 [1 2 3 4])))
+      (assert-eq [2 3 4] (->vec (take-last 3 (list 1 2 3 4))))
+      (assert-eq [1 2 3 4] (->vec (take-last 10 (list 1 2 3 4))))
+      (assert-eq nil (take-last 0 [1 2 3 4])))))
+
+
+(deftest "drop"
+  (let [{: drop : list : lazy-seq} suit]
+    (testing "drop"
+      (assert-eq [4] (->vec (drop 3 [1 2 3 4])))
+      (assert-eq [4] (->vec (drop 3 (list 1 2 3 4)))))
+    (testing "drop is lazy"
+      (let [se []
+            s (drop 3 (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [4 5] (->vec s))
+        (assert-eq se [1])))))
+
+
+(deftest "drop-while"
+  (let [{: drop-while : list : lazy-seq} suit]
+    (testing "drop-while"
+      (assert-eq [4] (->vec (drop-while #(< $ 4) [1 2 3 4])))
+      (assert-eq [4] (->vec (drop-while #(< $ 4) (list 1 2 3 4)))))
+    (testing "drop-while is lazy"
+      (let [se []
+            s (drop-while #(< $ 4) (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [4 5] (->vec s))
+        (assert-eq se [1])))))
+
+
+(deftest "drop-last"
+  (let [{: drop-last : list : lazy-seq} suit]
+    (testing "drop-last"
+      (assert-eq [1] (->vec (drop-last 3 [1 2 3 4])))
+      (assert-eq [1] (->vec (drop-last 3 (list 1 2 3 4))))
+      (assert-eq [] (->vec (drop-last 10 (list 1 2 3 4)))))
+    (testing "drop-last is lazy"
+      (let [se []
+            s (drop-last 3 (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [1 2] (->vec s))
+        (assert-eq se [1])))))
+
+
 (deftest "equality"
   (if (lua53-eq?)
       (let [{: seq : take : range : drop : map} suit]
@@ -239,8 +314,27 @@
                        v))))))
 
 
+(deftest "count"
+  (let [{: count : list : cons : range : take} suit]
+    (testing "count"
+      (assert-eq 3 (count (list :a :b :c)) 3)
+      (assert-eq 10 (count (range 10)))
+      (assert-eq 1 (count (cons 1 nil)))
+      (assert-eq 0 (count (list)))
+      (assert-eq 0 (count (take 0 (range)))))))
+
+
 (deftest "map"
-  (let [{: map : dorun} suit]
+  (let [{: map : dorun : lazy-seq} suit]
+    (testing "map accepts arbitrary amount of collections"
+      (assert-eq (->vec (map #[$...] [:a]))
+                 [[:a]])
+      (assert-eq (->vec (map #[$...] [:a] [:b]))
+                 [[:a :b]])
+      (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f]))
+                 [[:a :b :c] [:d :e :f]])
+      (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f] [:x :y :z]))
+                 [[:a :b :c :x] [:d :e :f :y]]))
     (testing "map is lazy"
       (let [se []
             s1 (map #(table.insert se $) [1 2 3])
@@ -255,18 +349,85 @@
         (dorun s3)
         (assert-eq [1 2 3 4 5 6 7 8 9] se)
         (dorun s4)
-        (assert-eq [1 2 3 4 5 6 7 8 9 10 11 12] se)))
+        (assert-eq [1 2 3 4 5 6 7 8 9 10 11 12] se))
+      (let [se []
+            s1 (map #[$] (lazy-seq #(do (table.insert se 1) [1 2 3])))
+            s2 (map #[$1 $2]
+                       (lazy-seq #(do (table.insert se 2) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 3) [1 2 3])))
+            s3 (map #[$1 $2 $3]
+                       (lazy-seq #(do (table.insert se 4) [7 8 9]))
+                       (lazy-seq #(do (table.insert se 5) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 6) [1 2 3])))
+            s4 (map #[$1 $2 $3 $4]
+                       (lazy-seq #(do (table.insert se 7) [10 11 12]))
+                       (lazy-seq #(do (table.insert se 8) [7 8 9]))
+                       (lazy-seq #(do (table.insert se 9) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 10) [1 2 3])))]
+        (assert-eq se [])
+        (assert-eq (->vec s1) [[1] [2] [3]])
+        (assert-eq [1] se)
+        (assert-eq (->vec s2) [[4 1] [5 2] [6 3]])
+        (assert-eq [1 2 3] se)
+        (assert-eq (->vec s3) [[7 4 1] [8 5 2] [9 6 3]])
+        (assert-eq [1 2 3 4 5 6] se)
+        (assert-eq (->vec s4) [[10 7 4 1] [11 8 5 2] [12 9 6 3]])
+        (assert-eq [1 2 3 4 5 6 7 8 9 10] se)))
     (testing "map length"
-      (assert-eq 3 (length* (map #nil [1 2 3]))))
-    (testing "map accepts arbitrary amount of collections"
-      (assert-eq (->vec (map #[$...] [:a]))
-                 [[:a]])
-      (assert-eq (->vec (map #[$...] [:a] [:b]))
-                 [[:a :b]])
-      (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f]))
-                 [[:a :b :c] [:d :e :f]])
-      (assert-eq (->vec (map #[$...] [:a :d] [:b :e] [:c :f] [:x :y :z]))
-                 [[:a :b :c :x] [:d :e :f :y]]))))
+      (assert-eq 3 (length* (map #nil [1 2 3]))))))
+
+
+(deftest "map-indexed"
+  (let [{: map-indexed : dorun} suit]
+    (testing "map is lazy"
+      (let [se []
+            s1 (map-indexed #(table.insert se [$1 $2]) [:a :b :c])]
+        (assert-eq se {})
+        (dorun s1)))
+    (testing "map length"
+      (assert-eq 3 (length* (map-indexed #nil [1 2 3]))))))
+
+
+(deftest "mapcat"
+  (let [{: mapcat : lazy-seq} suit]
+    (testing "mapcat is lazy"
+      (let [se []
+            s1 (mapcat #(do (table.insert se $) [$]) [1 2 3])
+            s2 (mapcat #(do (table.insert se $) [$1 $2]) [4 5 6] [1 2 3])
+            s3 (mapcat #(do (table.insert se $) [$1 $2 $3]) [7 8 9] [4 5 6] [1 2 3])
+            s4 (mapcat #(do (table.insert se $) [$1 $2 $3 $4]) [10 11 12] [7 8 9] [4 5 6] [1 2 3])]
+        (assert-eq se [])
+        (assert-eq (->vec s1) [1 2 3])
+        (assert-eq [1 2 3] se)
+        (assert-eq (->vec s2) [4 1 5 2 6 3])
+        (assert-eq [1 2 3 4 5 6] se)
+        (assert-eq (->vec s3) [7 4 1 8 5 2 9 6 3])
+        (assert-eq [1 2 3 4 5 6 7 8 9] se)
+        (assert-eq (->vec s4) [10 7 4 1 11 8 5 2 12 9 6 3])
+        (assert-eq [1 2 3 4 5 6 7 8 9 10 11 12] se))
+      (let [se []
+            s1 (mapcat #[$] (lazy-seq #(do (table.insert se 1) [1 2 3])))
+            s2 (mapcat #[$1 $2]
+                       (lazy-seq #(do (table.insert se 2) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 3) [1 2 3])))
+            s3 (mapcat #[$1 $2 $3]
+                       (lazy-seq #(do (table.insert se 4) [7 8 9]))
+                       (lazy-seq #(do (table.insert se 5) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 6) [1 2 3])))
+            s4 (mapcat #[$1 $2 $3 $4]
+                       (lazy-seq #(do (table.insert se 7) [10 11 12]))
+                       (lazy-seq #(do (table.insert se 8) [7 8 9]))
+                       (lazy-seq #(do (table.insert se 9) [4 5 6]))
+                       (lazy-seq #(do (table.insert se 10) [1 2 3])))]
+        (assert-eq se [])
+        (assert-eq (->vec s1) [1 2 3])
+        (assert-eq [1] se)
+        (assert-eq (->vec s2) [4 1 5 2 6 3])
+        (assert-eq [1 2 3] se)
+        (assert-eq (->vec s3) [7 4 1 8 5 2 9 6 3])
+        (assert-eq [1 2 3 4 5 6] se)
+        (assert-eq (->vec s4) [10 7 4 1 11 8 5 2 12 9 6 3])
+        (assert-eq [1 2 3 4 5 6 7 8 9 10] se)))))
 
 
 (deftest "seq packing/unpacking"
@@ -305,6 +466,19 @@
         (assert-eq se [1 -1 2 -2 3 -3])
         (assert-eq [true false true false true]
                    (->vec (take 5 (keep #(= 0 (% $ 2)) (range)))))))))
+
+
+(deftest "keep-indexed"
+  (let [{: keep-indexed : take : range} suit]
+    (testing "keep-indexed is lazy"
+      (let [se []
+            res (keep-indexed #(do (table.insert se $2) (if (> $2 0) [$1 $2] nil))
+                              [1 -1 2 -2 3 -3])]
+        (assert-eq se [])
+        (assert-eq [[1 1] [3 2] [5 3]] (->vec res))
+        (assert-eq se [1 -1 2 -2 3 -3])
+        (assert-eq [[1 true] [2 false] [3 true] [4 false] [5 true]]
+                   (->vec (take 5 (keep-indexed #[$1 (= 0 (% $2 2))] (range)))))))))
 
 
 (deftest "concat"
@@ -356,6 +530,21 @@
       (assert-not (some? #(> $ 0) [])))))
 
 
+(deftest "contains?"
+  (let [{: contains? : range} suit]
+    (testing "contains?"
+      (assert-is (contains? [1 2 3] 3))
+      (assert-not (contains? [1 2 3] 4))
+      (assert-is (contains? "foobar" "b"))
+      (assert-is (contains? (range) 90)))))
+
+
+(deftest "distinct"
+  (let [{: distinct} suit]
+    (testing "distinct"
+      (assert-eq [1 2 3] (->vec (distinct [1 1 1 2 2 3 3 1 2 3 3]))))))
+
+
 (deftest "cycle"
   (let [{: cycle : take : map} suit]
     (testing "cycling a table"
@@ -373,6 +562,13 @@
                  (->vec (take 10 (repeat 42)))))))
 
 
+(deftest "iterate"
+  (let [{: iterate : take} suit]
+    (testing "iterate"
+      (assert-eq [1 2 3 4 5] (->vec (take 5 (iterate #(+ $ 1) 1))))
+      (assert-eq [1 2 4 8 16] (->vec (take 5 (iterate (partial * 2) 1)))))))
+
+
 (deftest "repeatedly"
   (let [{: repeatedly : take} suit]
     (testing "repeating a function call"
@@ -381,6 +577,12 @@
     (testing "repeating a function call with additional arguments"
       (assert-eq [[1 2 3] [1 2 3] [1 2 3]]
                  (->vec (take 3 (repeatedly #[$...] 1 2 3)))))))
+
+
+(deftest "reverse"
+  (let [{: reverse} suit]
+    (testing "reverse"
+      (assert-eq [3 2 1] (->vec (reverse [1 2 3]))))))
 
 
 (deftest "range"
@@ -534,3 +736,43 @@
         (assert-eq se [1 2 3])
         (assert-eq (vectorize p4) [["f"] ["o" "o"] ["b"] ["a"] ["r"]])
         (assert-eq se [1 2 3 4])))))
+
+
+(deftest "remove"
+  (let [{: remove : lazy-seq : range : take} suit]
+    (testing "remove"
+      (assert-eq [1 3 5] (->vec (remove #(= 0 (% $ 2)) [1 2 3 4 5])))
+      (assert-eq [1 2 3 4 5] (->vec (remove #false [1 2 3 4 5])))
+      (assert-eq [] (->vec (remove #true [1 2 3 4 5]))))
+    (testing "remove is lazy"
+      (let [se []
+            res (remove #(= 0 (% $ 2)) (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [1 3 5] (->vec res))
+        (assert-eq se [1]))
+      (assert-eq (->vec (take 5 (remove #(= 0 (% $ 2)) (range))))
+                 [1 3 5 7 9]))))
+
+
+(deftest "splits"
+  (let [{: split-at : split-with : map} suit
+        vectorize #(->vec (map ->vec $))]
+    (testing "split-at"
+      (assert-eq (vectorize (split-at 3 [1 2 3 4 5 6]))
+                 [[1 2 3] [4 5 6]])
+      (assert-eq (vectorize (split-at 10 [1 2 3 4 5 6]))
+                 [[1 2 3 4 5 6] []])
+      (assert-eq (vectorize (split-at 0 [1 2 3 4 5 6]))
+                 [[] [1 2 3 4 5 6]]))
+    (testing "split-with"
+      (assert-eq (vectorize (split-with #(< $ 3) [1 2 3 4 5 6]))
+                 [[1 2] [3 4 5 6]])
+      (assert-eq (vectorize (split-with #(< $ 10) [1 2 3 4 5 6]))
+                 [[1 2 3 4 5 6] []])
+      (assert-eq (vectorize (split-with #(< $ 0) [1 2 3 4 5 6]))
+                 [[] [1 2 3 4 5 6]]))))
+
+
+(deftest "tree-seq"
+  (let [{: tree-seq : seq? : map} suit]
+    (assert-eq [[[1 2 [3]] [4]]] (->vec (tree-seq seq? #$ [[1 2 [3]] [4]])))))

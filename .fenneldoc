@@ -4,7 +4,7 @@
 
 {:fennel-path {}
  :function-signatures true
- :ignored-args-patterns ["%.%.%." "%_" "c" "s"]
+ :ignored-args-patterns ["%.%.%." "%_" "c" "s" "x" "f"]
  :inline-references "link"
  :insert-comment true
  :insert-copyright true

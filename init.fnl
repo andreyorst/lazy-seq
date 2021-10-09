@@ -812,57 +812,58 @@ second one, until any sequence exhausts."
   (drop 1 (interleave (repeat separator) coll)))
 
 (setmetatable
- {: first
-  : rest
-  : nthrest
-  : next
-  : nthnext
-  : cons
-  : seq
-  : seq?
-  : empty?
-  : lazy-seq
-  : list
-  : every?
-  : some?
-  : pack
-  : unpack
-  : count
-  : concat
-  : map
-  : map-indexed
-  : mapcat
-  : take
-  : take-while
-  : take-last
-  : drop
-  : drop-while
-  : drop-last
-  : remove
-  : split-at
-  : split-with
-  : partition
-  : partition-by
-  : partition-all
-  : filter
-  : keep
-  : keep-indexed
-  : contains?
-  : distinct
-  : cycle
-  : repeat
-  : repeatedly
-  : iterate
-  : range
-  : realized?
-  : dorun
-  : doall
-  : line-seq
-  : tree-seq
-  : reverse
-  : to-iter
-  : interleave
-  : interpose}
+ {: first                               ; tested
+  : rest                                ; tested
+  : nthrest                             ; tested
+  : next                                ; tested
+  : nthnext                             ; tested
+  : cons                                ; tested
+  : seq                                 ; tested
+  : seq?                                ; tested
+  : empty?                              ; tested
+  : lazy-seq                            ; tested
+  : list                                ; tested
+  : every?                              ; tested
+  : some?                               ; tested
+  : pack                                ; tested
+  : unpack                              ; tested
+  : count                               ; tested
+  : concat                              ; tested
+  : map                                 ; tested
+  : map-indexed                         ; tested
+  : mapcat                              ; tested
+  : take                                ; tested
+  : take-while                          ; tested
+  : take-last                           ; tested
+  : drop                                ; tested
+  : drop-while                          ; tested
+  : drop-last                           ; tested
+  : remove                              ; tested
+  : split-at                            ; tested
+  : split-with                          ; tested
+  : partition                           ; tested
+  : partition-by                        ; tested
+  : partition-all                       ; tested
+  : filter                              ; tested
+  : keep                                ; tested
+  : keep-indexed                        ; tested
+  : contains?                           ; tested
+  : distinct                            ; tested
+  : cycle                               ; tested
+  : repeat                              ; tested
+  : repeatedly                          ; tested
+  : iterate                             ; tested
+  : range                               ; tested
+  : realized?                           ; tested
+  : dorun                               ; tested
+  : doall                               ; tested
+  : line-seq                            ; tested
+  : tree-seq                            ; tested
+  : reverse                             ; tested
+  : to-iter                             ; tested
+  : interleave                          ; tested
+  : interpose                           ; tested
+  }
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
 
