@@ -20,11 +20,11 @@ and `lazy-cat`.  These macros are provided for convenience only.
 
 **Table of contents**
 
-- [`seq`](#seq)
 - [`cons`](#cons)
 - [`first`](#first)
 - [`rest`](#rest)
 - [`next`](#next)
+- [`seq`](#seq)
 - [`lazy-seq`](#lazy-seq)
 - [`list`](#list)
 - [`dorun`](#dorun)
@@ -71,6 +71,47 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`take-while`](#take-while)
 - [`to-iter`](#to-iter)
 - [`tree-seq`](#tree-seq)
+
+## `cons`
+Function signature:
+
+```
+(cons ...)
+```
+
+Construct a cons cell.
+Second element must be either a table or a sequence, or nil.
+
+## `first`
+Function signature:
+
+```
+(first s)
+```
+
+Return first element of a sequence.
+
+## `rest`
+Function signature:
+
+```
+(rest s)
+```
+
+Return the tail of a sequence.
+
+If the sequence is empty, returns empty sequence.
+
+## `next`
+Function signature:
+
+```
+(next s)
+```
+
+Return the tail of a sequence.
+
+If the sequence is empty, returns nil.
 
 ## `seq`
 Function signature:
@@ -119,47 +160,6 @@ Iterating through a sequence:
 
 
 Sequences can also be created manually by using `cons` function.
-
-## `cons`
-Function signature:
-
-```
-(cons ...)
-```
-
-Construct a cons cell.
-Second element must be either a table or a sequence, or nil.
-
-## `first`
-Function signature:
-
-```
-(first s)
-```
-
-Return first element of a sequence.
-
-## `rest`
-Function signature:
-
-```
-(rest s)
-```
-
-Return the tail of a sequence.
-
-If the sequence is empty, returns empty sequence.
-
-## `next`
-Function signature:
-
-```
-(next s)
-```
-
-Return the tail of a sequence.
-
-If the sequence is empty, returns nil.
 
 ## `lazy-seq`
 Function signature:

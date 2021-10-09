@@ -21,11 +21,11 @@
  :out-dir "./doc"
  :project-copyright "Copyright (C) 2021 Andrey Listopadov"
  :project-doc-order {:init-macros.fnl ["lazy-seq" "lazy-cat"]
-                     :init.fnl ["seq"
-                                "cons"
+                     :init.fnl ["cons"
                                 "first"
                                 "rest"
                                 "next"
+                                "seq"
                                 "lazy-seq"
                                 "list"
                                 "dorun"
