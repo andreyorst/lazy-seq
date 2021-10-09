@@ -40,29 +40,37 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`drop`](#drop)
 - [`drop-last`](#drop-last)
 - [`drop-while`](#drop-while)
+- [`empty?`](#empty)
 - [`every?`](#every)
 - [`filter`](#filter)
 - [`interleave`](#interleave)
 - [`interpose`](#interpose)
-- [`iter`](#iter)
+- [`iterate`](#iterate)
 - [`keep`](#keep)
 - [`keep-indexed`](#keep-indexed)
 - [`line-seq`](#line-seq)
 - [`map`](#map)
 - [`map-indexed`](#map-indexed)
 - [`mapcat`](#mapcat)
+- [`nthnext`](#nthnext)
+- [`nthrest`](#nthrest)
 - [`partition`](#partition)
 - [`partition-all`](#partition-all)
 - [`partition-by`](#partition-by)
 - [`range`](#range)
+- [`remove`](#remove)
 - [`repeat`](#repeat)
 - [`repeatedly`](#repeatedly)
+- [`reverse`](#reverse)
+- [`seq?`](#seq-1)
 - [`some?`](#some)
 - [`split-at`](#split-at)
 - [`split-with`](#split-with)
 - [`take`](#take)
 - [`take-last`](#take-last)
 - [`take-while`](#take-while)
+- [`to-iter`](#to-iter)
+- [`tree-seq`](#tree-seq)
 
 ## `seq`
 Function signature:
@@ -71,7 +79,7 @@ Function signature:
 (seq s)
 ```
 
-Construct a sequence out of a table or another sequence `s`.
+Construct a sequence out of a table, string or another sequence `s`.
 Returns `nil` if given an empty sequence or an empty table.
 
 Sequences are immutable and persistent, but their contents are not
@@ -248,7 +256,7 @@ Function signature:
 (contains? coll elt)
 ```
 
-Test if `elt` is in the `coll`.
+Test if `elt` is in the `coll`.  May be a linear search depending on the type of the collection.
 
 ## `count`
 Function signature:
@@ -308,6 +316,15 @@ Function signature:
 Drop the elements from the collection `coll` until `pred` returns logical
 false for any of the elemnts.  Returns a lazy sequence.
 
+## `empty?`
+Function signature:
+
+```
+(empty? x)
+```
+
+Check if sequence is empty.
+
 ## `every?`
 Function signature:
 
@@ -346,23 +363,14 @@ Function signature:
 
 Returns a lazy sequence of the elements of `coll` separated by `separator`.
 
-## `iter`
+## `iterate`
 Function signature:
 
 ```
-(iter s)
+(iterate f x)
 ```
 
-Transform sequence `s` to a stateful iterator going over its elements.
-
-Provides a safer* iterator that only returns values of a sequence
-without the sequence tail. Returns `nil` when no elements left.
-Automatically converts its argument to a sequence by calling `seq` on
-it.
-
-(* Accidental realization of a tail of an
-infinite sequence can freeze your program and eat all memory, as the
-sequence is infinite.)
+Returns an infinete lazy sequence of x, (f x), (f (f x)) etc.
 
 ## `keep`
 Function signature:
@@ -468,6 +476,24 @@ Function signature:
 Apply `concat` to the result of calling `map` with `f` and
 collections.
 
+## `nthnext`
+Function signature:
+
+```
+(nthnext coll n)
+```
+
+Returns the nth next of `coll`, (seq coll) when `n` is 0.
+
+## `nthrest`
+Function signature:
+
+```
+(nthrest coll n)
+```
+
+Returns the nth rest of `coll`, `coll` when `n` is 0.
+
 ## `partition`
 Function signature:
 
@@ -528,6 +554,16 @@ Various ranges:
 (take 10 (range)) ;; => @seq(0 1 2 3 4 5 6 7 8 9)
 ```
 
+## `remove`
+Function signature:
+
+```
+(remove pred coll)
+```
+
+Returns a lazy sequence of the items in the `coll` without elements
+for wich `pred` returns logical true.
+
 ## `repeat`
 Function signature:
 
@@ -554,6 +590,24 @@ Function signature:
 
 Takes a function `f` and returns an infinite lazy sequence of
 function applications.  Rest arguments are passed to the function.
+
+## `reverse`
+Function signature:
+
+```
+(reverse s)
+```
+
+Returns an eager reversed sequence.
+
+## `seq?`
+Function signature:
+
+```
+(seq? x)
+```
+
+Check if object is a sequence.
 
 ## `some?`
 Function signature:
@@ -620,6 +674,39 @@ Function signature:
 
 Take the elements from the collection `coll` until `pred` returns logical
 false for any of the elemnts.  Returns a lazy sequence.
+
+## `to-iter`
+Function signature:
+
+```
+(to-iter s)
+```
+
+Transform sequence `s` to a stateful iterator going over its elements.
+
+Provides a safer* iterator that only returns values of a sequence
+without the sequence tail. Returns `nil` when no elements left.
+Automatically converts its argument to a sequence by calling `seq` on
+it.
+
+(* Accidental realization of a tail of an
+infinite sequence can freeze your program and eat all memory, as the
+sequence is infinite.)
+
+## `tree-seq`
+Function signature:
+
+```
+(tree-seq branch? children root)
+```
+
+Returns a lazy sequence of the nodes in a tree, via a depth-first walk.
+
+`branch?` must be a fn of one arg that returns true if passed a node
+that can have children (but may not).  `children` must be a fn of one
+arg that returns a sequence of the children.  Will only be called on
+nodes for which `branch?` returns true.  `root` is the root node of
+the tree.
 
 
 ---
