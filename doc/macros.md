@@ -66,7 +66,7 @@ Lazily concatenate finite sequence with infinite:
 ```fennel
 (local r (lazy-cat (take 10 (range)) (drop 10 (range))))
 (assert-eq [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14]
-           [(unpack (take 15 r))])
+           (take 15 r))
 ```
 
 Another Fibonacci sequence variant:
@@ -75,7 +75,7 @@ Another Fibonacci sequence variant:
 (global fib (lazy-cat [0 1] (map #(+ $1 $2) (rest fib) fib)))
 
 (assert-eq [0 1 1 2 3 5 8]
-           [(unpack (take 7 fib))])
+           (take 7 fib))
 ```
 
 

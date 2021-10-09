@@ -219,7 +219,7 @@ Transform sequential table to a sequence:
 (local nums [1 2 3 4 5])
 (local num-seq (seq nums))
 
-(assert-eq nums [(unpack num-seq)])
+(assert-eq nums num-seq)
 ```
 
 Iterating through a sequence:
@@ -235,7 +235,7 @@ Iterating through a sequence:
    s nil))
 
 (assert-eq [5 4 3 2 1]
-           [(unpack (reverse s))])
+           (reverse s))
 ```
 
 
@@ -277,7 +277,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
 
 ``` fennel
 (local l (list 1 2 3 4 5))
-(assert-eq [1 2 3 4 5] [(unpack l)])
+(assert-eq [1 2 3 4 5] l)
 ```"
   (let [args (table-pack ...)]
     (var l empty-cons)
@@ -805,11 +805,29 @@ with `take`:
 (fn tree-seq [branch? children root]
   "Returns a lazy sequence of the nodes in a tree, via a depth-first walk.
 
-`branch?` must be a fn of one arg that returns true if passed a node
-that can have children (but may not).  `children` must be a fn of one
-arg that returns a sequence of the children.  Will only be called on
-nodes for which `branch?` returns true.  `root` is the root node of
-the tree."
+`branch?` must be a function of one arg that returns true if passed a
+node that can have children (but may not).  `children` must be a
+function of one arg that returns a sequence of the children.  Will
+only be called on nodes for which `branch?` returns true.  `root` is
+the root node of the tree.
+
+# Examples
+
+For the given tree `[\"A\" [\"B\" [\"D\"] [\"E\"]] [\"C\" [\"F\"]]]`:
+
+        A
+       / \\
+      B   C
+     / \\   \\
+    D   E   F
+
+Calling `tree-seq` with `next' as the `branch?` and `rest' as the
+`children` returns a flat representation of a tree:
+
+``` fennel
+(assert-eq (map first (tree-seq next rest [\"A\" [\"B\" [\"D\"] [\"E\"]] [\"C\" [\"F\"]]]))
+           [\"A\" \"B\" \"D\" \"E\" \"C\" \"F\"])
+```"
   ((fn walk [node]
      (lazy-seq
       #(cons node
