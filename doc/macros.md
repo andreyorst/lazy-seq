@@ -5,7 +5,6 @@ Macros for creating lazy sequences.
 
 - [`lazy-seq`](#lazy-seq)
 - [`lazy-cat`](#lazy-cat)
-- [`doseq`](#doseq)
 
 ## `lazy-seq`
 Function signature:
@@ -77,76 +76,6 @@ Another Fibonacci sequence variant:
 
 (assert-eq [0 1 1 2 3 5 8]
            [(unpack (take 7 fib))])
-```
-
-## `doseq`
-Function signature:
-
-```
-(doseq bindings ...)
-```
-
-Execute body for side effects with let-like `bindings` for a given
-sequences.  Doesn't retain the head of the sequence.  Returns nil.
-
-Supports special clauses: `:let`, `:when`, and `:while`.  `:let` can
-introduce new bindings into body form, `:when` controls when the body
-is executed, and `:while` will terminate execution once condition
-becomes false.  The `:let` and `:when` clauses are evaluated in the
-order they appear, `:while` always guards the iteration process.
-
-### Examples
-
-Cartesian product:
-
-```fennel
-(local cartesian [])
-
-(doseq [x [:a :b :c]
-        y [1 2 3]
-        z [:foo :bar]]
-  (table.insert cartesian [x y z]))
-
-(assert-eq cartesian
-           [[:a 1 :foo] [:a 1 :bar] [:a 2 :foo] [:a 2 :bar] [:a 3 :foo] [:a 3 :bar]
-            [:b 1 :foo] [:b 1 :bar] [:b 2 :foo] [:b 2 :bar] [:b 3 :foo] [:b 3 :bar]
-            [:c 1 :foo] [:c 1 :bar] [:c 2 :foo] [:c 2 :bar] [:c 3 :foo] [:c 3 :bar]])
-```
-
-Using `:let` special clause:
-
-```fennel
-(local res [])
-
-(doseq [x [1 2 3]
-        :let [y (+ x 1)]]
-  (table.insert res [x y]))
-
-(assert-eq res [[1 2] [2 3] [3 4]])
-```
-
-Using `:when` special clause:
-
-```fennel
-(local res [])
-
-(doseq [x [1 2 3 4 5 6 7 8]
-        :when (= 0 (% x 2))]
-  (table.insert res x))
-
-(assert-eq res [2 4 6 8])
-```
-
-Using `:while` special clause:
-
-```fennel
-(local res [])
-
-(doseq [x (range)
-        :while (< x 10)]
-  (table.insert res x))
-
-(assert-eq res [0 1 2 3 4 5 6 7 8 9])
 ```
 
 
