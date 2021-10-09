@@ -1,4 +1,4 @@
-# Lazy-seq.fnl (v0.0.2-dev)
+# Lazy-seq.fnl (v0.0.2)
 Lazy sequence library for Fennel and Lua.
 
 Most functions in this library return a so called lazy sequence.  The

@@ -1,5 +1,7 @@
-## lazy-seq v0.0.2 (unreleased)
+## lazy-seq v0.0.2 (2021-10-09)
 
+- Fixed equality bugs.
+- Fixed bugs in `partition-all`, and `partition-by`.
 - Implement sequence indexing and destructuring.
 - `realized?` now only checks first element of a sequence.
 - Rename `next*` function to `next`.
