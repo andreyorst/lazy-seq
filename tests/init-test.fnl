@@ -196,7 +196,7 @@
 
 
 (deftest "take-last"
-  (let [{: take-last : list : lazy-seq} suit]
+  (let [{: take-last : list} suit]
     (testing "take-last"
       (assert-eq [2 3 4] (->vec (take-last 3 [1 2 3 4])))
       (assert-eq [2 3 4] (->vec (take-last 3 (list 1 2 3 4))))
@@ -275,7 +275,7 @@
             (assert-eq [4 5 6 7 8 9] rest)
             (io.stderr:write "info: Skipping destructuring rest packing test\n"))))
     (testing "destructuring doesn't realize whole collection"
-      (let [[_ a b c &as r] (range 10)]
+      (let [[_ _a _b _c &as r] (range 10)]
         (assert-not (realized? (drop 4 r)))))))
 
 
@@ -613,7 +613,7 @@
 
 
 (deftest "doall and dorun"
-  (let [{: doall : dorun : map : seq : pack} suit]
+  (let [{: doall : dorun : map : pack} suit]
     (testing "doall"
       (let [se []
             s (map #(table.insert se $) [1 2 3])]
@@ -774,5 +774,7 @@
 
 
 (deftest "tree-seq"
-  (let [{: tree-seq : seq? : map} suit]
-    (assert-eq [[[1 2 [3]] [4]]] (->vec (tree-seq seq? #$ [[1 2 [3]] [4]])))))
+  (let [{: tree-seq : seq? : map : first : next : rest} suit]
+    (assert-eq [[[1 2 [3]] [4]]] (->vec (tree-seq seq? #$ [[1 2 [3]] [4]])))
+    (assert-eq [:A :B :D :E :C :F] (->vec (map first (tree-seq next rest [:A [:B [:D] [:E]] [:C [:F]]]))))
+    (assert-eq [[1 2 [3]] 4] (->vec (map first (tree-seq next rest [[1 2 [3]] [4]]))))))
