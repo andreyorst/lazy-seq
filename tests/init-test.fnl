@@ -467,13 +467,70 @@
 
 
 (deftest "partitions"
-  (let [{: partition : partition-all : partition-by : map} suit
+  (let [{: partition : partition-all : partition-by : map : lazy-seq} suit
         vectorize #(->vec (map ->vec $))]
     (testing "partition"
-      (testing "partition"
-        (assert-not (pcall partition))
-        (assert-not (pcall partition 1))
-        (assert-eq (vectorize (partition 1 [1 2 3 4])) [[1] [2] [3] [4]])
-        (assert-eq (vectorize (partition 1 2 [1 2 3 4])) [[1] [3]])
-        (assert-eq (vectorize (partition 3 2 [1 2 3 4 5])) [[1 2 3] [3 4 5]])
-        (assert-eq (vectorize (partition 3 3 [0 -1 -2 -3] [1 2 3 4])) [[1 2 3] [4 0 -1]])))))
+      (assert-not (pcall partition))
+      (assert-not (pcall partition 1))
+      (assert-eq (vectorize (partition 1 [1 2 3 4])) [[1] [2] [3] [4]])
+      (assert-eq (vectorize (partition 1 2 [1 2 3 4])) [[1] [3]])
+      (assert-eq (vectorize (partition 3 2 [1 2 3 4 5])) [[1 2 3] [3 4 5]])
+      (assert-eq (vectorize (partition 3 3 [0 -1 -2 -3] [1 2 3 4])) [[1 2 3] [4 0 -1]]))
+    (testing "partition is lazy"
+      (let [se []
+            p1 (partition 1 (lazy-seq #(do (table.insert se 1) [1 2 3 4])))
+            p2 (partition 1 2 (lazy-seq #(do (table.insert se 2) [1 2 3 4])))
+            p3 (partition 3 2 (lazy-seq #(do (table.insert se 3) [1 2 3 4 5])))
+            p4 (partition 3 3 (lazy-seq #(do (table.insert se 4) [0 -1 -2 -3])) [1 2 3 4])]
+        (assert-eq se [])
+        (assert-eq (vectorize p1) [[1] [2] [3] [4]])
+        (assert-eq se [1])
+        (assert-eq (vectorize p2) [[1] [3]])
+        (assert-eq se [1 2])
+        (assert-eq (vectorize p3) [[1 2 3] [3 4 5]])
+        (assert-eq se [1 2 3])
+        (assert-eq (vectorize p4) [[1 2 3] [4 0 -1]])
+        (assert-eq se [1 2 3 4])))
+    (testing "partition-all"
+      (assert-not (pcall partition-all))
+      (assert-not (pcall partition-all 1))
+      (assert-not (pcall partition-all 1 2 3 4 5))
+      (assert-eq (vectorize (partition-all 1 [1 2 3 4])) [[1] [2] [3] [4]])
+      (assert-eq (vectorize (partition-all 1 2 [1 2 3 4])) [[1] [3]])
+      (assert-eq (vectorize (partition-all 3 2 [1 2 3 4 5])) [[1 2 3] [3 4 5] [5]])
+      (assert-eq (vectorize (partition-all 3 3 [1 2 3 4])) [[1 2 3] [4]]))
+    (testing "partition-all is lazy"
+      (let [se []
+            p1 (partition-all 1 (lazy-seq #(do (table.insert se 1) [1 2 3 4])))
+            p2 (partition-all 1 2 (lazy-seq #(do (table.insert se 2) [1 2 3 4])))
+            p3 (partition-all 3 2 (lazy-seq #(do (table.insert se 3) [1 2 3 4 5])))
+            p4 (partition-all 3 3 (lazy-seq #(do (table.insert se 4) [1 2 3 4])))]
+        (assert-eq se [])
+        (assert-eq (vectorize p1) [[1] [2] [3] [4]])
+        (assert-eq se [1])
+        (assert-eq (vectorize p2) [[1] [3]])
+        (assert-eq se [1 2])
+        (assert-eq (vectorize p3) [[1 2 3] [3 4 5] [5]])
+        (assert-eq se [1 2 3])
+        (assert-eq (vectorize p4) [[1 2 3] [4]])
+        (assert-eq se [1 2 3 4])))
+    (testing "partition-by"
+      (assert-eq (vectorize (partition-by #(= 3 $) [1 2 3 4 5])) [[1 2] [3] [4 5]])
+      (assert-eq (vectorize (partition-by #(not= 0 (% $ 2)) [1 1 1 2 2 3 3])) [[1 1 1] [2 2] [3 3]])
+      (assert-eq (vectorize (partition-by #(= 0 (% $ 2)) [1 1 1 2 2 3 3])) [[1 1 1] [2 2] [3 3]])
+      (assert-eq (vectorize (partition-by #$ "foobar")) [["f"] ["o" "o"] ["b"] ["a"] ["r"]]))
+    (testing "partition-by is lazy"
+      (let [se []
+            p1 (partition-by #(= 3 $) (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))
+            p2 (partition-by #(not= 0 (% $ 2)) (lazy-seq #(do (table.insert se 2) [1 1 1 2 2 3 3])))
+            p3 (partition-by #(= 0 (% $ 2)) (lazy-seq #(do (table.insert se 3) [1 1 1 2 2 3 3])))
+            p4 (partition-by #$ (lazy-seq #(do (table.insert se 4) "foobar")))]
+        (assert-eq se [])
+        (assert-eq (vectorize p1) [[1 2] [3] [4 5]])
+        (assert-eq se [1])
+        (assert-eq (vectorize p2) [[1 1 1] [2 2] [3 3]])
+        (assert-eq se [1 2])
+        (assert-eq (vectorize p3) [[1 1 1] [2 2] [3 3]])
+        (assert-eq se [1 2 3])
+        (assert-eq (vectorize p4) [["f"] ["o" "o"] ["b"] ["a"] ["r"]])
+        (assert-eq se [1 2 3 4])))))

@@ -600,7 +600,7 @@ items."
    #(match (seq coll)
       s (let [v (first s)
               fv (f v)
-              run  (cons f (take-while #(= fv (f $)) (next s)))]
+              run (cons v (take-while #(= fv (f $)) (next s)))]
           (cons run (partition-by f (lazy-seq #(drop (length* run) s))))))))
 
 (fn partition-all [...]
@@ -608,12 +608,12 @@ items."
 partitions with fewer than n items at the end."
   (match (select "#" ...)
     2 (let [(n coll) ...]
-        (partition n n coll))
+        (partition-all n n coll))
     3 (let [(n step coll) ...]
         (lazy-seq
          #(match (seq coll)
             s (let [p (take n s)]
-                (cons p (partition n step (nthrest s step))))
+                (cons p (partition-all n step (nthrest s step))))
             _ nil)))
     _ (error "wrong amount arguments to 'partition-all'")))
 
