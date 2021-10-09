@@ -246,7 +246,7 @@
 
 (deftest "equality"
   (if (lua53-eq?)
-      (let [{: seq : take : range : drop : map} suit]
+      (let [{: seq : take : range : drop : map : list} suit]
         (testing "comparing seqs"
           (assert-is (= (seq [1 2 3]) (seq [1 2 3])))
           (assert-is (= (seq [0 1 2]) (take 3 (range)))))
@@ -256,6 +256,13 @@
         (testing "comparing seqs and tables"
           (assert-is (= (seq [1 2 3]) [1 2 3]))
           (assert-is (= (take 3 (range)) [0 1 2])))
+        (testing "comparing to empty-list"
+          (assert-not (= (list) (list nil)))
+          (assert-not (= (list nil) (list)))
+          (assert-is (= (list) (map #nil [])))
+          (assert-is (= (map #nil []) (list)))
+          (assert-not (= (list) (map #nil [1])))
+          (assert-not (= (map #nil [1]) (list))))
         (testing "using test suite equality"
           (assert-eq (seq [1 2 3]) (seq [1 2 3]))
           (assert-eq (seq [0 1 2]) (take 3 (range)))

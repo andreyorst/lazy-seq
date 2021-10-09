@@ -37,17 +37,56 @@
     s* (s* true)
     _ nil))
 
-(local empty-cons
-  (let [e []]
-    (setmetatable e {:__len #0
-                     :__fennelview #"@seq()"
-                     :__lazy-seq/type :empty-cons
-                     :__newindex #(error "cons cell is immutable")
-                     :__index #nil
-                     :__name "cons"
-                     :__pairs #(values lua-next [] nil)
-                     :__eq (fn [s1 s2] (rawequal s1 s2))
-                     :__call #(if $2 nil e)})))
+(fn empty-cons-view []
+  ;; __fennelview metamethods for empty conses
+  "@seq()")
+
+(fn empty-cons-len []
+  ;; __len metamethods for empty conses
+  0)
+
+(fn empty-cons-index []
+  ;; __index metamethods for empty conses
+  nil)
+
+(fn cons-newindex []
+  ;; __newindex metamethod for sequences
+  (error "cons cell is immutable"))
+
+(fn empty-cons-next [s]
+  nil)
+
+(fn empty-cons-pairs [s]
+  (values empty-cons-next nil s))
+
+(fn gettype [x]
+  (match (?. (getmetatable x) :__lazy-seq/type)
+    t t
+    _ (type x)))
+
+(fn realize [c]
+  ;; force realize single cons cell
+  (when (= :lazy-cons (gettype c))
+    (c))
+  c)
+
+(local empty-cons [])
+
+(fn empty-cons-call [tf]
+  (if tf nil empty-cons))
+
+(fn empty-cons-eq [_ s]
+  (rawequal (getmetatable empty-cons) (getmetatable (realize s))))
+
+(setmetatable empty-cons {:__call empty-cons-call
+                          :__len empty-cons-len
+                          :__fennelview empty-cons-view
+                          :__lazy-seq/type :empty-cons
+                          :__newindex cons-newindex
+                          :__index empty-cons-index
+                          :__name "cons"
+                          :__eq empty-cons-eq
+                          :__pairs empty-cons-pairs})
 
 (fn rest [s]
   "Return the tail of a sequence.
@@ -56,11 +95,6 @@ If the sequence is empty, returns empty sequence."
   (match (seq s)
     s* (s* false)
     _ empty-cons))
-
-(fn gettype [x]
-  (match (?. (getmetatable x) :__lazy-seq/type)
-    t t
-    _ (type x)))
 
 (fn seq? [x]
   "Check if object is a sequence."
@@ -72,12 +106,6 @@ If the sequence is empty, returns empty sequence."
 (fn empty? [x]
   "Check if sequence is empty."
   (not (seq x)))
-
-(fn realize [c]
-  ;; force realize single cons cell
-  (match (gettype c)
-    :lazy-cons (c))
-  c)
 
 (fn next [s]
   "Return the tail of a sequence.
@@ -110,6 +138,49 @@ If the sequence is empty, returns nil."
    :string true
    :table true})
 
+(fn cons-next [_ s]
+  ;; stateless iterator over a sequence for __pairs metamethod
+  (if (not= empty-cons s)
+      (let [tail (next s)]
+        (match (gettype tail)
+          :cons (values tail (first s))
+          _ (values empty-cons (first s))))
+      nil))
+
+(fn cons-pairs [s]
+  ;; __pairs metamethod for sequences
+  (values cons-next nil s))
+
+(fn cons-eq [s1 s2]
+  ;; __eq metamethod for sequences
+  (if (rawequal s1 s2)
+      true
+      (if (and (not (rawequal s2 empty-cons))
+               (not (rawequal s1 empty-cons)))
+          (do (var (s1 s2 res) (values s1 s2 true))
+              (while (and res s1 s2)
+                (set res (= (first s1) (first s2)))
+                (set s1 (next s1))
+                (set s2 (next s2)))
+              res)
+          false)))
+
+(fn cons-len [s]
+  ;; __len metamethod for sequences
+  (var (s len) (values s 0))
+  (while s
+    (set (s len) (values (next s) (+ len 1))))
+  len)
+
+(fn cons-index [s i]
+  ;; __index metamethod for sequences
+  (if (> i 0)
+      (do (var (s i*) (values s 1))
+          (while (and (not= i* i) s)
+            (set (s i*) (values (next s) (+ i* 1))))
+          (first s))
+      nil))
+
 (fn cons [...]
   "Construct a cons cell.
 Second element must be either a table or a sequence, or nil."
@@ -119,35 +190,12 @@ Second element must be either a table or a sequence, or nil."
             (: "expected nil, cons, table, or string as a tail, got: %s" :format tp))
     (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
                       :__lazy-seq/type :cons
-                      :__index #(if (> $2 0)
-                                    (do (var (s i) (values $ 1))
-                                        (while (and (not= i $2) s)
-                                          (set (s i) (values (next s) (+ i 1))))
-                                        (first s))
-                                    nil)
-                      :__newindex #(error "cons cell is immutable")
-                      :__len #(do (var (s len) (values $ 0))
-                                  (while s
-                                    (set (s len) (values (next s) (+ len 1))))
-                                  len)
-                      :__pairs #(values (fn [_ s]
-                                          (if (not= empty-cons s)
-                                              (let [tail (next s)]
-                                                (match (gettype tail)
-                                                  :cons (values tail (first s))
-                                                  _ (values empty-cons (first s))))
-                                              nil))
-                                        nil $)
+                      :__index cons-index
+                      :__newindex cons-newindex
+                      :__len cons-len
+                      :__pairs cons-pairs
                       :__name "cons"
-                      :__eq (fn [s1 s2]
-                              (if (rawequal s1 s2)
-                                  true
-                                  (do (var (s1 s2 res) (values s1 s2 true))
-                                      (while (and res s1 s2)
-                                        (set res (= (first s1) (first s2)))
-                                        (set s1 (next s1))
-                                        (set s2 (next s2)))
-                                      res)))
+                      :__eq cons-eq
                       :__fennelview pp-seq})))
 
 (set seq
@@ -214,12 +262,12 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                         (setmetatable lazy-cons (getmetatable empty-cons)))))]
     (setmetatable lazy-cons {:__call #((realize) $2)
                              :__index #(. (realize) $2)
-                             :__newindex #(error "cons cell is immutable")
-                             :__fennelview #((. (getmetatable (realize)) :__fennelview) $...)
+                             :__newindex cons-newindex
+                             :__fennelview #(do (realize) (pp-seq $...))
                              :__len #(length* (realize))
                              :__pairs #(pairs (realize))
                              :__name "lazy cons"
-                             :__eq (fn [_ s2] (= (realize) (seq s2)))
+                             :__eq #(= (realize) $2)
                              :__lazy-seq/type :lazy-cons})))
 
 (fn list [...]
@@ -781,8 +829,8 @@ it.
 infinite sequence can freeze your program and eat all memory, as the
 sequence is infinite.)"
   (let [s (or (seq s) empty-cons)]
-    (var (seq-next _ state) (pairs s))
-    #(let [(new-state res) (seq-next s state)]
+    (var state s)
+    #(let [(new-state res) (cons-next s state)]
        (set state new-state)
        res)))
 
