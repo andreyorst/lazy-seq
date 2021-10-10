@@ -54,7 +54,9 @@
       (assert-eq (->vec (cons 1 [2])) [1 2])
       (assert-eq (->vec (cons 1 [2])) [1 2])
       (assert-eq (->vec (cons 1 "abc")) [1 "a" "b" "c"])
-      (assert-eq (->vec (cons 1 (cons 2 (cons 3 (cons 4 nil))))) [1 2 3 4]))))
+      (assert-eq (->vec (cons 1 (cons 2 (cons 3 (cons 4 nil))))) [1 2 3 4]))
+    (testing "conses are immutable"
+      (assert-not (pcall #(tset (cons nil nil) 1 42))))))
 
 
 (deftest "first"
@@ -76,7 +78,9 @@
     (testing "rest retunrs empty-cons for empty sequences"
       (assert-eq (->vec (rest [])) [])
       (assert-eq (->vec (rest "")) [])
-      (assert-eq (->vec (rest (rest (cons nil nil)))) []))))
+      (assert-eq (->vec (rest (rest (cons nil nil)))) []))
+    (testing "empty-cons is immutable"
+      (assert-not (pcall #(tset (rest []) 1 42))))))
 
 
 (deftest "nthrest"
@@ -293,7 +297,7 @@
       (assert-eq nil (seq []))
       (assert-eq nil (seq (rest [])))
       (assert-eq nil (first nil)))
-    (testing "lazy-seq returns lazy "
+    (testing "lazy-seq returns a lazy sequence"
       (let [se {}
             s (lazy-seq #(tset se :a 42) [1 2 3])]
         (assert-eq se {})
@@ -318,7 +322,9 @@
       (assert-eq [1 1 1 1 1]
                  (icollect [_ v (pairs s) :until (= i 5)]
                    (do (set i (+ i 1))
-                       v))))))
+                       v))))
+    (testing "lazy-seq is immutable"
+      (assert-not (pcall #(tset (lazy-seq #[1 2 3]) 1 42))))))
 
 
 (deftest "count"
