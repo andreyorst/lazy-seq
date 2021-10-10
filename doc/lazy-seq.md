@@ -1,4 +1,4 @@
-# Lazy-seq.fnl (v0.0.2)
+# Lazy-seq.fnl (v0.0.3-dev)
 Lazy sequence library for Fennel and Lua.
 
 Most functions in this library return a so called lazy sequence.  The
@@ -69,7 +69,6 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`take`](#take)
 - [`take-last`](#take-last)
 - [`take-while`](#take-while)
-- [`to-iter`](#to-iter)
 - [`tree-seq`](#tree-seq)
 
 ## `cons`
@@ -674,24 +673,6 @@ Function signature:
 
 Take the elements from the collection `coll` until `pred` returns logical
 false for any of the elemnts.  Returns a lazy sequence.
-
-## `to-iter`
-Function signature:
-
-```
-(to-iter s)
-```
-
-Transform sequence `s` to a stateful iterator going over its elements.
-
-Provides a safer* iterator that only returns values of a sequence
-without the sequence tail. Returns `nil` when no elements left.
-Automatically converts its argument to a sequence by calling `seq` on
-it.
-
-(* Accidental realization of a tail of an
-infinite sequence can freeze your program and eat all memory, as the
-sequence is infinite.)
 
 ## `tree-seq`
 Function signature:
