@@ -1,3 +1,7 @@
+## lazy-seq v0.0.3-dev (unreleased)
+
+- Removed `to-iter`, use `pairs` carefully instead.
+
 ## lazy-seq v0.0.2 (2021-10-09)
 
 - Fixed equality bugs.

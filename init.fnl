@@ -835,23 +835,6 @@ Calling `tree-seq` with `next' as the `branch?` and `rest' as the
                  (mapcat walk (children node))))))
    root))
 
-(fn to-iter [s]
-  "Transform sequence `s` to a stateful iterator going over its elements.
-
-Provides a safer* iterator that only returns values of a sequence
-without the sequence tail. Returns `nil` when no elements left.
-Automatically converts its argument to a sequence by calling `seq` on
-it.
-
-(* Accidental realization of a tail of an
-infinite sequence can freeze your program and eat all memory, as the
-sequence is infinite.)"
-  (let [s (or (seq s) empty-cons)]
-    (var state s)
-    #(let [(new-state res) (cons-next s state)]
-       (set state new-state)
-       res)))
-
 (fn interleave [...]
   "Returns a lazy sequence of the first item in each sequence, then the
 second one, until any sequence exhausts."
@@ -926,7 +909,6 @@ second one, until any sequence exhausts."
   : line-seq                            ; tested
   : tree-seq                            ; tested
   : reverse                             ; tested
-  : to-iter                             ; tested
   : interleave                          ; tested
   : interpose                           ; tested
   }

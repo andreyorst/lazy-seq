@@ -654,15 +654,6 @@
                    se)))))
 
 
-(deftest "to-iter"
-  (let [{: to-iter : seq : lazy-seq} suit]
-    (testing "iterator over sequences"
-      (let [s (seq [1 2 3])]
-        (assert-eq [1 2 3] (icollect [x (to-iter s)] x)))
-      (let [s (lazy-seq #[1 2 3])]
-        (assert-eq [1 2 3] (icollect [x (to-iter s)] x))))))
-
-
 (deftest "interleave"
   (let [{: interleave : lazy-seq : rest} suit]
     (testing "interleave"
