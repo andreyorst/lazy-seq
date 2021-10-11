@@ -75,12 +75,16 @@
 (fn empty-cons-call [tf]
   (if tf nil empty-cons))
 
+(fn empty-cons-fennelrest []
+  empty-cons)
+
 (fn empty-cons-eq [_ s]
   (rawequal (getmetatable empty-cons) (getmetatable (realize s))))
 
 (setmetatable empty-cons {:__call empty-cons-call
                           :__len empty-cons-len
                           :__fennelview empty-cons-view
+                          :__fennelrest empty-cons-fennelrest
                           :__lazy-seq/type :empty-cons
                           :__newindex cons-newindex
                           :__index empty-cons-index
@@ -129,6 +133,11 @@ If the sequence is empty, returns nil."
     (doto lines
       (tset 1 (.. "@seq(" (or (. lines 1) "")))
       (tset (length lines) (.. (. lines (length lines)) ")")))))
+
+(var drop nil)
+
+(fn cons-fennelrest [c i]
+  (drop (- i 1) c))
 
 (local allowed-types
   {:cons true
@@ -196,7 +205,8 @@ Second element must be either a table or a sequence, or nil."
                       :__pairs cons-pairs
                       :__name "cons"
                       :__eq cons-eq
-                      :__fennelview pp-seq})))
+                      :__fennelview pp-seq
+                      :__fennelrest cons-fennelrest})))
 
 (set seq
      (fn [s]
@@ -264,6 +274,7 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
                              :__index #(. (realize) $2)
                              :__newindex cons-newindex
                              :__fennelview #(do (realize) (pp-seq $...))
+                             :__fennelrest cons-fennelrest
                              :__len #(length* (realize))
                              :__pairs #(pairs (realize))
                              :__name "lazy cons"
@@ -464,15 +475,16 @@ false for any of the elemnts.  Returns a lazy sequence."
                        nil))
                _ nil)))
 
-(fn drop [n coll]
-  "Drop `n` elements from collection `coll`, returning a lazy sequence
+(set drop
+     (fn [n coll]
+       "Drop `n` elements from collection `coll`, returning a lazy sequence
 of remaining elements."
-  (let [step (fn step [n coll]
-               (let [s (seq coll)]
-                 (if (and (> n 0) s)
-                     (step (- n 1) (rest s))
-                     s)))]
-    (lazy-seq #(step n coll))))
+       (let [step (fn step [n coll]
+                    (let [s (seq coll)]
+                      (if (and (> n 0) s)
+                          (step (- n 1) (rest s))
+                          s)))]
+         (lazy-seq #(step n coll)))))
 
 (fn drop-while [pred coll]
   "Drop the elements from the collection `coll` until `pred` returns logical

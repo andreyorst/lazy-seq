@@ -1,6 +1,7 @@
 ## lazy-seq v0.0.3-dev (unreleased)
 
 - Removed `to-iter`, use `pairs` carefully instead.
+- Added `__fnlrest` metamethod for better destructuring of lazy sequences.
 
 ## lazy-seq v0.0.2 (2021-10-09)
 
@@ -19,5 +20,5 @@
 
 Initial release of lazy-seq library.
 
-<!--  LocalWords:  destructuring
+<!--  LocalWords:  destructuring metamethod
  -->

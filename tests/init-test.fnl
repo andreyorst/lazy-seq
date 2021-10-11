@@ -38,6 +38,10 @@
   (let [s (-> {} (setmetatable {:__name "foo"}) tostring)]
     (= (s:match :foo) :foo)))
 
+(fn fennelrest-supported? []
+  (let [[_ & x] (setmetatable [] {:__fennelrest #true})]
+    (= x true)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (deftest "conses"
@@ -282,11 +286,11 @@
     (testing "destructuring"
       (let [[_ a b c & rest] (range 10)]
         (assert-eq 6 (+ a b c))
-        (if (lua53-unpack?)
-            (assert-eq [4 5 6 7 8 9] rest)
+        (if (or (fennelrest-supported?) (lua53-unpack?))
+            (assert-eq [4 5 6 7 8 9] (->vec rest))
             (io.stderr:write "info: Skipping destructuring rest packing test\n"))))
     (testing "destructuring doesn't realize whole collection"
-      (let [[_ _a _b _c &as r] (range 10)]
+      (let [[_ _ _ _ &as r] (range 10)]
         (assert-not (realized? (drop 4 r)))))))
 
 
