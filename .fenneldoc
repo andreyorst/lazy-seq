@@ -36,7 +36,7 @@
  :project-license "[MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)"
  :project-version "v0.0.3-dev"
  :sandbox false
- :test-requirements {:init-macros.fnl "(require-macros :fennel-test.test)
+ :test-requirements {:init-macros.fnl "(require-macros :fennel-test)
                                        (require-macros :init-macros)
                                        (local {: cons : map : take : range : rest : drop : first : unpack} (require :init))"
                      :init.fnl "(require-macros :fennel-test.test)"}
