@@ -275,8 +275,9 @@
           (assert-eq (seq [1 2 3]) (seq [1 2 3]))
           (assert-eq (seq [0 1 2]) (take 3 (range)))
           (assert-eq (seq [0 1 2]) (take 3 (range)))
-          (assert-eq (map #(+ $ 1) [0 1 2]) (drop 1 (take 3 (range))))
+          (assert-eq (map #(+ $ 1) [0 1 2]) (drop 1 (take 4 (range))))
           (assert-eq (seq [1 2 3]) [1 2 3])
+          (assert-eq [1 2 3] (seq [1 2 3]))
           (assert-eq (take 3 (range)) [0 1 2])))
       (io.stderr:write "info: Skipping equality test\n")))
 

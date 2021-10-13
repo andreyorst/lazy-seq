@@ -419,7 +419,7 @@ Returns lazy sequence.
                          (cons (f (first s1) (first s2) (first s3))
                                (map f (rest s1) (rest s2) (rest s3)))
                          nil))))
-    _ (let [s (seq [...] (select "#" ...))]
+    _ (let [s (list ...)]
         (lazy-seq #(if (every? #(not= nil (seq $)) s)
                        (cons (f (unpack (map first s)))
                              (map f (unpack (map rest s))))
@@ -862,7 +862,7 @@ second one, until any sequence exhausts."
                                  (interleave (rest s1) (rest s2))))
                      nil)))
     (_)
-    (let [cols (seq [...] (select "#" ...))]
+    (let [cols (list ...)]
       (lazy-seq #(let [seqs (map seq cols)]
                    (if (every? #(not= nil (seq $)) seqs)
                        (concat (map first seqs)
