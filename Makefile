@@ -3,7 +3,7 @@ FENNEL ?= fennel
 VERSION ?=
 FNLSOURCES = init.fnl
 FNLMACROS = init-macros.fnl
-FNLTESTS = $(wildcard tests/*.fnl)
+FNLTESTS = $(wildcard tests/*.fnl) fennel-test/utils.fnl
 LUATESTS = $(FNLTESTS:.fnl=.lua)
 FNLDOCS = $(FNLMACROS) $(FNLSOURCES)
 LUASOURCES = $(FNLSOURCES:.fnl=.lua)
