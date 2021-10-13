@@ -39,5 +39,5 @@
  :test-requirements {:init-macros.fnl "(require-macros :fennel-test)
                                        (require-macros :init-macros)
                                        (local {: cons : map : take : range : rest : drop : first : unpack} (require :init))"
-                     :init.fnl "(require-macros :fennel-test.test)"}
+                     :init.fnl "(require-macros :fennel-test)"}
  :toc true}
