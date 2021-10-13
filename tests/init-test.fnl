@@ -1,4 +1,4 @@
-(require-macros :fennel-test.test)
+(require-macros :fennel-test)
 (local suit (require :init))
 
 (local lua-pairs pairs)
