@@ -872,6 +872,27 @@ second one, until any sequence exhausts."
   "Returns a lazy sequence of the elements of `coll` separated by `separator`."
   (drop 1 (interleave (repeat separator) coll)))
 
+(fn keys [t]
+  "Return a sequence of keys in table `t`."
+  (assert (= :assoc (kind t)) "expected an associative table")
+  (map #(. $ 1) t))
+
+(fn vals [t]
+  "Return a sequence of values in table `t`."
+  (assert (= :assoc (kind t)) "expected an associative table")
+  (map #(. $ 2) t))
+
+(fn zipmap [keys vals]
+  "Return an associative table with the `keys` mapped to the
+corresponding `vals`."
+  (let [t {}]
+    ((fn loop [s1 s2]
+       (when (and s1 s2)
+         (tset t (first s1) (first s2))
+         (loop (next s1) (next s2))))
+     (seq keys) (seq vals))
+    t))
+
 (setmetatable
  {: first                               ; tested
   : rest                                ; tested
@@ -923,6 +944,9 @@ second one, until any sequence exhausts."
   : reverse                             ; tested
   : interleave                          ; tested
   : interpose                           ; tested
+  : keys
+  : vals
+  : zipmap
   }
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
