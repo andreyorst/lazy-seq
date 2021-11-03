@@ -395,6 +395,15 @@
       (assert-eq 3 (length* (map #nil [1 2 3]))))))
 
 
+(deftest zipmap-test
+  (let [{: zipmap : range : list} suit]
+    (testing "zipmap combines keys and values into map"
+      (assert-eq {:a 1 :b 2 :c 3} (zipmap [:a :b :c] [1 2 3]))
+      (assert-eq {:a 1 :c 3} (zipmap (list :a :b :c) (list 1 nil 3))))
+    (testing "zipmap accepts lazy sequences"
+      (assert-eq {:a 0 :b 1 :c 2} (zipmap [:a :b :c] (range))))))
+
+
 (deftest map-indexed-test
   (let [{: map-indexed : dorun} suit]
     (testing "map is lazy"
@@ -448,7 +457,7 @@
         (assert-eq [1 2 3 4 5 6 7 8 9 10] se)))))
 
 
-(deftest seq-packing/unpacking-test
+(deftest seq-pack-unpack-test
   (let [{: seq : pack : unpack} suit]
     (testing "packing seq"
       (assert-eq (pack (seq [1 2 3]))
@@ -787,3 +796,29 @@
     (assert-eq [[[1 2 [3]] [4]]] (->vec (tree-seq seq? #$ [[1 2 [3]] [4]])))
     (assert-eq [:A :B :D :E :C :F] (->vec (map first (tree-seq next rest [:A [:B [:D] [:E]] [:C [:F]]]))))
     (assert-eq [[1 2 [3]] 4] (->vec (map first (tree-seq next rest [[1 2 [3]] [4]]))))))
+
+
+(deftest keys-test
+  (let [{: keys} suit]
+    (testing "keys"
+      (assert-eq [:a :b :c] (doto (->vec (keys {:a 1 :b 2 :c 3}))
+                              (table.sort)))
+      (assert-eq [1 2 3 :n] (doto (->vec (keys {1 1 2 2 3 3 :n 4}))
+                              (table.sort #(< (tostring $1) (tostring $2))))))
+    (testing "keys expects a map"
+      (assert-not (pcall keys [1 2 3]))
+      (assert-not (pcall keys "foo"))
+      (assert-not (pcall keys 1)))))
+
+
+(deftest vals-test
+  (let [{: vals} suit]
+    (testing "vals"
+      (assert-eq [1 2 3] (doto (->vec (vals {:a 1 :b 2 :c 3}))
+                           (table.sort)))
+      (assert-eq [1 2 3 4] (doto (->vec (vals {1 1 2 2 3 3 :n 4}))
+                             (table.sort))))
+    (testing "vals expects a map"
+      (assert-not (pcall vals [1 2 3]))
+      (assert-not (pcall vals "foo"))
+      (assert-not (pcall vals 1)))))

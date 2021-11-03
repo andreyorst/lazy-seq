@@ -944,9 +944,9 @@ corresponding `vals`."
   : reverse                             ; tested
   : interleave                          ; tested
   : interpose                           ; tested
-  : keys
-  : vals
-  : zipmap
+  : keys                                ; tested
+  : vals                                ; tested
+  : zipmap                              ; tested
   }
  {:__index {:_MODULE_NAME "lazy-seq.fnl"
             :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
