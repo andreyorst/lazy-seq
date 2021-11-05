@@ -39,7 +39,7 @@ Lua:
         - luarocks-5.3 install luacov-cobertura
         - *fenneldoc
     script:
-        - LUAEXECUTABLES="lua5.2 lua5.3 lua5.4" make testall >/dev/null
+        - LUAEXECUTABLES="lua5.2 lua5.3 lua5.4" make testall
         - make luacov
         - tail luacov.report
     artifacts:
