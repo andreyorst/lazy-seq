@@ -822,3 +822,9 @@
       (assert-not (pcall vals [1 2 3]))
       (assert-not (pcall vals "foo"))
       (assert-not (pcall vals 1)))))
+
+(deftest reductions-test
+  (let [{: reductions} suit]
+    (testing "reductions"
+      (assert-eq [1 3 6 10 15] (->vec (reductions #(+ $1 $2) [1 2 3 4 5])))
+      (assert-eq [10 11 13 16 20 25] (->vec (reductions #(+ $1 $2) 10 [1 2 3 4 5]))))))

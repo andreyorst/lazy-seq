@@ -664,7 +664,7 @@ items."
           (cons run (partition-by f (lazy-seq #(drop (length* run) s))))))))
 
 (fn partition-all [...]
-  "Returns a lazy sequence of lists like partition, but may include
+  "Returns a lazy sequence of lists like `partition`, but may include
 partitions with fewer than n items at the end."
   (match (select "#" ...)
     2 (let [(n coll) ...]
@@ -934,6 +934,7 @@ corresponding `vals`."
   : cycle                               ; tested
   : repeat                              ; tested
   : repeatedly                          ; tested
+  : reductions                          ; tested
   : iterate                             ; tested
   : range                               ; tested
   : realized?                           ; tested
