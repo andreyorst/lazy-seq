@@ -48,6 +48,7 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`iterate`](#iterate)
 - [`keep`](#keep)
 - [`keep-indexed`](#keep-indexed)
+- [`keys`](#keys)
 - [`line-seq`](#line-seq)
 - [`map`](#map)
 - [`map-indexed`](#map-indexed)
@@ -70,6 +71,8 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`take-last`](#take-last)
 - [`take-while`](#take-while)
 - [`tree-seq`](#tree-seq)
+- [`vals`](#vals)
+- [`zipmap`](#zipmap)
 
 ## `cons`
 Function signature:
@@ -392,6 +395,15 @@ Returns a lazy sequence of the non-nil results of (f index item) in
 the `coll`.  Note, this means false return values will be included.
 `f` must be free of side-effects.
 
+## `keys`
+Function signature:
+
+```
+(keys t)
+```
+
+Return a sequence of keys in table `t`.
+
 ## `line-seq`
 Function signature:
 
@@ -707,6 +719,25 @@ Calling `tree-seq` with [`next`](#next) as the `branch?` and [`rest`](#rest) as 
            ["A" "B" "D" "E" "C" "F"])
 ```
 
+## `vals`
+Function signature:
+
+```
+(vals t)
+```
+
+Return a sequence of values in table `t`.
+
+## `zipmap`
+Function signature:
+
+```
+(zipmap keys vals)
+```
+
+Return an associative table with the `keys` mapped to the
+corresponding `vals`.
+
 
 ---
 
@@ -715,5 +746,5 @@ Copyright (C) 2021 Andrey Listopadov
 License: [MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)
 
 
-<!-- Generated with Fenneldoc v0.1.7
+<!-- Generated with Fenneldoc v0.1.9-dev
      https://gitlab.com/andreyorst/fenneldoc -->

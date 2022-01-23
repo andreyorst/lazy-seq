@@ -893,78 +893,58 @@ corresponding `vals`."
      (seq keys) (seq vals))
     t))
 
-(setmetatable
- {: first                               ; tested
-  : rest                                ; tested
-  : nthrest                             ; tested
-  : next                                ; tested
-  : nthnext                             ; tested
-  : cons                                ; tested
-  : seq                                 ; tested
-  : seq?                                ; tested
-  : empty?                              ; tested
-  : lazy-seq                            ; tested
-  : list                                ; tested
-  : every?                              ; tested
-  : some?                               ; tested
-  : pack                                ; tested
-  : unpack                              ; tested
-  : count                               ; tested
-  : concat                              ; tested
-  : map                                 ; tested
-  : map-indexed                         ; tested
-  : mapcat                              ; tested
-  : take                                ; tested
-  : take-while                          ; tested
-  : take-last                           ; tested
-  : drop                                ; tested
-  : drop-while                          ; tested
-  : drop-last                           ; tested
-  : remove                              ; tested
-  : split-at                            ; tested
-  : split-with                          ; tested
-  : partition                           ; tested
-  : partition-by                        ; tested
-  : partition-all                       ; tested
-  : filter                              ; tested
-  : keep                                ; tested
-  : keep-indexed                        ; tested
-  : contains?                           ; tested
-  : distinct                            ; tested
-  : cycle                               ; tested
-  : repeat                              ; tested
-  : repeatedly                          ; tested
-  : reductions                          ; tested
-  : iterate                             ; tested
-  : range                               ; tested
-  : realized?                           ; tested
-  : dorun                               ; tested
-  : doall                               ; tested
-  : line-seq                            ; tested
-  : tree-seq                            ; tested
-  : reverse                             ; tested
-  : interleave                          ; tested
-  : interpose                           ; tested
-  : keys                                ; tested
-  : vals                                ; tested
-  : zipmap                              ; tested
-  }
- {:__index {:_MODULE_NAME "lazy-seq.fnl"
-            :_DESCRIPTION "Lazy sequence library for Fennel and Lua.
-
-Most functions in this library return a so called lazy sequence.  The
-contents of such sequences aren't computed until requested, and
-similarly to iterators, lazy sequences can be infinite.
-
-The key difference from iterators is that sequence itself is a data
-structure.  It can be passed, and shared between functions, and
-operations on a sequence will not affect other callers.  Infinite
-sequences are either consumed on per element basis, or bade finite by
-calling `take` with desired size argument.
-
-Both eager and lazy sequences support `pairs` iteration, which will
-never terminate in case of infinite lazy sequence.  Such iterator
-returns current sequence tail and it's head element as values.
-
-Lazy sequences can also be created with the help of macros `lazy-seq`
-and `lazy-cat`.  These macros are provided for convenience only."}})
+{: first                               ; tested
+ : rest                                ; tested
+ : nthrest                             ; tested
+ : next                                ; tested
+ : nthnext                             ; tested
+ : cons                                ; tested
+ : seq                                 ; tested
+ : seq?                                ; tested
+ : empty?                              ; tested
+ : lazy-seq                            ; tested
+ : list                                ; tested
+ : every?                              ; tested
+ : some?                               ; tested
+ : pack                                ; tested
+ : unpack                              ; tested
+ : count                               ; tested
+ : concat                              ; tested
+ : map                                 ; tested
+ : map-indexed                         ; tested
+ : mapcat                              ; tested
+ : take                                ; tested
+ : take-while                          ; tested
+ : take-last                           ; tested
+ : drop                                ; tested
+ : drop-while                          ; tested
+ : drop-last                           ; tested
+ : remove                              ; tested
+ : split-at                            ; tested
+ : split-with                          ; tested
+ : partition                           ; tested
+ : partition-by                        ; tested
+ : partition-all                       ; tested
+ : filter                              ; tested
+ : keep                                ; tested
+ : keep-indexed                        ; tested
+ : contains?                           ; tested
+ : distinct                            ; tested
+ : cycle                               ; tested
+ : repeat                              ; tested
+ : repeatedly                          ; tested
+ : reductions                          ; tested
+ : iterate                             ; tested
+ : range                               ; tested
+ : realized?                           ; tested
+ : dorun                               ; tested
+ : doall                               ; tested
+ : line-seq                            ; tested
+ : tree-seq                            ; tested
+ : reverse                             ; tested
+ : interleave                          ; tested
+ : interpose                           ; tested
+ : keys                                ; tested
+ : vals                                ; tested
+ : zipmap                              ; tested
+ }

@@ -20,19 +20,41 @@
  :order "alphabetic"
  :out-dir "./doc"
  :project-copyright "Copyright (C) 2021 Andrey Listopadov"
- :project-doc-order {:init-macros.fnl ["lazy-seq" "lazy-cat"]
-                     :init.fnl ["cons"
-                                "first"
-                                "rest"
-                                "next"
-                                "seq"
-                                "lazy-seq"
-                                "list"
-                                "dorun"
-                                "doall"
-                                "realized?"
-                                "pack"
-                                "unpack"]}
+ :modules-info {:init.fnl
+                {:name "lazy-seq.fnl"
+                 :description "Lazy sequence library for Fennel and Lua.
+
+Most functions in this library return a so called lazy sequence.  The
+contents of such sequences aren't computed until requested, and
+similarly to iterators, lazy sequences can be infinite.
+
+The key difference from iterators is that sequence itself is a data
+structure.  It can be passed, and shared between functions, and
+operations on a sequence will not affect other callers.  Infinite
+sequences are either consumed on per element basis, or bade finite by
+calling `take` with desired size argument.
+
+Both eager and lazy sequences support `pairs` iteration, which will
+never terminate in case of infinite lazy sequence.  Such iterator
+returns current sequence tail and it's head element as values.
+
+Lazy sequences can also be created with the help of macros `lazy-seq`
+and `lazy-cat`.  These macros are provided for convenience only."
+                 :doc-order ["cons"
+                             "first"
+                             "rest"
+                             "next"
+                             "seq"
+                             "lazy-seq"
+                             "list"
+                             "dorun"
+                             "doall"
+                             "realized?"
+                             "pack"
+                             "unpack"]}
+                :init-macros.fnl {:name "macros.fnl"
+                                  :description "Macros for creating lazy sequences."
+                                  :doc-order ["lazy-seq" "lazy-cat"]}}
  :project-license "[MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)"
  :project-version "v0.0.3-dev"
  :sandbox false

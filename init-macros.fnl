@@ -69,11 +69,8 @@ Another Fibonacci sequence variant:
                          `(lazy-seq# (fn [] ,s)))))))
 
 
-;; TODO: implement doseq
-;; TODO: implement Clojure's for as a way to produce lazy sequences
+;; TODO: implement `doseq'
+;; TODO: implement Clojure's `for' as a way to produce lazy sequences
 
-(setmetatable
- {: lazy-seq
-  : lazy-cat}
- {:__index {:_DESCRIPTION "Macros for creating lazy sequences."
-            :_MODULE_NAME "macros.fnl"}})
+{: lazy-seq
+ : lazy-cat}
