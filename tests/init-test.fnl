@@ -73,18 +73,22 @@
 
 
 (deftest rest-test
-  (let [{: rest : cons} suit]
+  (let [{: rest : cons : first} suit]
     (testing "rest"
       (assert-eq (->vec (rest [])) [])
       (assert-eq (->vec (rest [1 2 3])) [2 3])
       (assert-eq (->vec (rest "abc")) ["b" "c"])
       (assert-eq (->vec (rest (cons 1 (cons 2 nil)))) [2]))
     (testing "rest retunrs empty-cons for empty sequences"
-      (assert-eq (->vec (rest [])) [])
+      (assert-eq (->vec (rest (rest []))) [])
       (assert-eq (->vec (rest "")) [])
       (assert-eq (->vec (rest (rest (cons nil nil)))) []))
     (testing "empty-cons is immutable"
-      (assert-not (pcall #(tset (rest []) 1 42))))))
+      (assert-not (pcall #(tset (rest []) 1 42))))
+    (testing "empty cons returns empty cons for rest and nil for first"
+      (let [empty (rest [])]
+        (assert-eq empty (rest empty))
+        (assert-eq nil (first empty))))))
 
 
 (deftest nthrest-test
@@ -283,16 +287,24 @@
 
 
 (deftest indexing-test
-  (let [{: range : realized? : drop} suit]
+  (let [{: range : realized? : drop : seq : rest} suit]
     (testing "destructuring"
-      (let [[_ a b c & rest] (range 10)]
+      (let [[_ a b c & r] (range 10)]
         (assert-eq 6 (+ a b c))
         (if (or (fennelrest-supported?) (lua53-unpack?))
-            (assert-eq [4 5 6 7 8 9] (->vec rest))
+            (assert-eq [4 5 6 7 8 9] (->vec r))
             (io.stderr:write "info: Skipping destructuring rest packing test\n"))))
+    (testing "destructuring empty cons returns empty cons"
+      (let [empty (rest [1])
+            [_ & r] (seq [1])]
+        (if (or (fennelrest-supported?) (lua53-unpack?))
+            (assert-eq empty (->vec r))
+            (io.stderr:write "info: Skipping destructuring empty cons test\n"))))
     (testing "destructuring doesn't realize whole collection"
       (let [[_ _ _ _ &as r] (range 10)]
-        (assert-not (realized? (drop 4 r)))))))
+        (if (or (fennelrest-supported?) (lua53-unpack?))
+            (assert-not (realized? (drop 4 r)))
+            (io.stderr:write "info: Skipping destructuring lazy test\n"))))))
 
 
 (deftest sequences-test
@@ -828,3 +840,17 @@
     (testing "reductions"
       (assert-eq [1 3 6 10 15] (->vec (reductions #(+ $1 $2) [1 2 3 4 5])))
       (assert-eq [10 11 13 16 20 25] (->vec (reductions #(+ $1 $2) 10 [1 2 3 4 5]))))))
+
+(deftest rseq-test
+  (let [{: rseq : reverse} suit]
+    (testing "rseq"
+      (assert-eq [3 2 1] (rseq [1 2 3]))
+      (let [v [:a :b :c]]
+        (assert-eq (reverse v) (rseq v))))
+    (testing "rseq returns nil on empty tables"
+      (assert-eq nil (rseq [])))
+    (testing "rseq doesn't work with anything but a sequential table"
+      (assert-not (pcall rseq "foo"))
+      (assert-not (pcall rseq {:a 1 :b 2}))
+      (assert-not (pcall rseq (rseq [1 2 3])))
+      (assert-not (pcall rseq 42)))))

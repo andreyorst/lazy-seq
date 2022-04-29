@@ -59,10 +59,12 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`partition-all`](#partition-all)
 - [`partition-by`](#partition-by)
 - [`range`](#range)
+- [`reductions`](#reductions)
 - [`remove`](#remove)
 - [`repeat`](#repeat)
 - [`repeatedly`](#repeatedly)
 - [`reverse`](#reverse)
+- [`rseq`](#rseq)
 - [`seq?`](#seq-1)
 - [`some?`](#some)
 - [`split-at`](#split-at)
@@ -526,7 +528,7 @@ Function signature:
 (partition-all ...)
 ```
 
-Returns a lazy sequence of lists like partition, but may include
+Returns a lazy sequence of lists like `partition`, but may include
 partitions with fewer than n items at the end.
 
 ## `partition-by`
@@ -564,6 +566,16 @@ Various ranges:
 (range 0 -5 -2) ;; => @seq(0 -2 -4)
 (take 10 (range)) ;; => @seq(0 1 2 3 4 5 6 7 8 9)
 ```
+
+## `reductions`
+Function signature:
+
+```
+(reductions ...)
+```
+
+Returns a lazy seq of the intermediate values of the reduction (as
+per reduce) of `coll` by `f`, starting with `init`.
 
 ## `remove`
 Function signature:
@@ -610,6 +622,28 @@ Function signature:
 ```
 
 Returns an eager reversed sequence.
+
+## `rseq`
+Function signature:
+
+```
+(rseq rev)
+```
+
+Returns, in possibly-constant time, a seq of the items in `rev` in reverse order.
+Input must be traversable with `ipairs`.  Doesn't work in constant
+time if `rev` implements a linear-time `__len` metamethod, or invoking
+Lua `#` operator on `rev` takes linar time.  If `t` is empty returns
+`nil`.
+
+### Examples
+
+``` fennel
+(local v [1 2 3])
+(local r (rseq v))
+
+(assert-eq (reverse v) r)
+```
 
 ## `seq?`
 Function signature:

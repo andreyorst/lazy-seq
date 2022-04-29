@@ -6,19 +6,30 @@
 (global utf8 _G.utf8)
 
 (fn pairs [t]
-  (match (getmetatable t)
-    {:__pairs p} (p t)
-    _ (lua-pairs t)))
+  (let [mt (getmetatable t)]
+    (if (and (= :table mt) mt.__pairs)
+        (mt.__pairs t)
+        (lua-pairs t))))
 
 (fn ipairs [t]
-  (match (getmetatable t)
-    {:__ipairs i} (i t)
-    _ (lua-ipairs t)))
+  (let [mt (getmetatable t)]
+    (if (and (= :table mt) mt.__ipairs)
+        (mt.__ipairs t)
+        (lua-ipairs t))))
+
+(fn rev-ipairs [t]
+  (values (fn next [t i]
+            (let [i (- i 1)]
+              (match (. t i)
+                v (values i v))))
+          t
+          (+ 1 (length t))))
 
 (fn length* [t]
-  (match (getmetatable t)
-    {:__len l} (l t)
-    _ (length t)))
+  (let [mt (getmetatable t)]
+    (if (and (= :table mt) mt.__len)
+        (mt.__len t)
+        (length t))))
 
 (fn table-pack [...]
   (doto [...] (tset :n (select "#" ...))))
@@ -297,15 +308,46 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
     l))
 
 (fn kind [t]
+  ;; A best effor at getting a kind of a given table.  Kind here means
+  ;; if a table is an assotiatice, sequential or empty. Also applies
+  ;; to string. If kind is unknown, returns `:else'.
   (match (type t)
     :table (let [len (length* t)
                  (nxt t* k) (pairs t)]
-             (if (not= nil (nxt t* (if (= len 0) k len))) :assoc
+             (if (and t* (not= nil (nxt t* (if (= len 0) k len)))) :assoc
                  (> len 0) :seq
                  :empty))
     :string (let [len (if utf8 (utf8.len t) (length t))]
               (if (> len 0) :string :empty))
     _ :else))
+
+(fn rseq [rev]
+  "Returns, in possibly-constant time, a seq of the items in `rev` in reverse order.
+Input must be traversable with `ipairs`.  Doesn't work in constant
+time if `rev` implements a linear-time `__len` metamethod, or invoking
+Lua `#` operator on `rev` takes linar time.  If `t` is empty returns
+`nil`.
+
+# Examples
+
+``` fennel
+(local v [1 2 3])
+(local r (rseq v))
+
+(assert-eq (reverse v) r)
+```"
+  (match (gettype rev)
+    :table
+    (match (kind rev)
+      :seq ((fn wrap [nxt t i]
+              (let [(i v) (nxt t i)]
+                (if (not= nil i)
+                    (cons v (lazy-seq #(wrap nxt t i)))
+                    empty-cons)))
+            (rev-ipairs rev))
+      :empty nil
+      _ (error (.. "can't create an rseq from a non-sequential table")))
+    _ (error (.. "can't create an rseq from a " _))))
 
 (set cons-iter
      (fn [t]
@@ -900,6 +942,7 @@ corresponding `vals`."
  : nthnext                             ; tested
  : cons                                ; tested
  : seq                                 ; tested
+ : rseq                                ; tested
  : seq?                                ; tested
  : empty?                              ; tested
  : lazy-seq                            ; tested
@@ -916,6 +959,7 @@ corresponding `vals`."
  : take                                ; tested
  : take-while                          ; tested
  : take-last                           ; tested
+ : take-nth                            ; TODO: test
  : drop                                ; tested
  : drop-while                          ; tested
  : drop-last                           ; tested
