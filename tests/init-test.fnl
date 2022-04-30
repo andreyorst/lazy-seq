@@ -844,7 +844,7 @@
 (deftest rseq-test
   (let [{: rseq : reverse} suit]
     (testing "rseq"
-      (assert-eq [3 2 1] (rseq [1 2 3]))
+      (assert-eq [3 2 1] (->vec (rseq [1 2 3])))
       (let [v [:a :b :c]]
         (assert-eq (reverse v) (rseq v))))
     (testing "rseq returns nil on empty tables"
