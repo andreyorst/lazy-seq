@@ -119,6 +119,17 @@
       (assert-eq (->vec (list)) [])
       (assert-eq (->vec (list 1 2 3 4 5)) [1 2 3 4 5]))))
 
+(deftest list*-test
+  (let [{: list*} suit]
+    (testing "list*"
+      (assert-eq nil (list*))
+      (assert-eq (->vec (list* [1])) [1])
+      (assert-eq (->vec (list* 1 [2])) [1 2])
+      (assert-eq (->vec (list* 1 2 [3])) [1 2 3])
+      (assert-eq (->vec (list* 1 2 3 [4])) [1 2 3 4])
+      (assert-eq (->vec (list* 1 2 3 4 [5])) [1 2 3 4 5])
+      (assert-eq (->vec (list* 1 2 3 4 5 [6 7])) [1 2 3 4 5 6 7])
+      (assert-not (pcall list* 1)))))
 
 (deftest seq-test
   (let [{: seq : rest} suit]
@@ -835,11 +846,13 @@
       (assert-not (pcall vals "foo"))
       (assert-not (pcall vals 1)))))
 
+
 (deftest reductions-test
   (let [{: reductions} suit]
     (testing "reductions"
       (assert-eq [1 3 6 10 15] (->vec (reductions #(+ $1 $2) [1 2 3 4 5])))
       (assert-eq [10 11 13 16 20 25] (->vec (reductions #(+ $1 $2) 10 [1 2 3 4 5]))))))
+
 
 (deftest rseq-test
   (let [{: rseq : reverse} suit]

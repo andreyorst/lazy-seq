@@ -10,12 +10,6 @@
  :insert-copyright true
  :insert-license true
  :insert-version true
- :keys {:copyright "_COPYRIGHT"
-        :description "_DESCRIPTION"
-        :doc-order "_DOC_ORDER"
-        :license "_LICENSE"
-        :module-name "_MODULE_NAME"
-        :version "_VERSION"}
  :mode "checkdoc"
  :order "alphabetic"
  :out-dir "./doc"

@@ -50,6 +50,7 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`keep-indexed`](#keep-indexed)
 - [`keys`](#keys)
 - [`line-seq`](#line-seq)
+- [`list*`](#list-1)
 - [`map`](#map)
 - [`map-indexed`](#map-indexed)
 - [`mapcat`](#mapcat)
@@ -71,6 +72,7 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`split-with`](#split-with)
 - [`take`](#take)
 - [`take-last`](#take-last)
+- [`take-nth`](#take-nth)
 - [`take-while`](#take-while)
 - [`tree-seq`](#tree-seq)
 - [`vals`](#vals)
@@ -451,6 +453,23 @@ with `take`:
   (assert-is (pcall next lines)))
 ```
 
+## `list*`
+Function signature:
+
+```
+(list* ...)
+```
+
+Creates a new sequence containing the items prepended to the rest,
+the last of which will be treated as a sequence.
+
+### Examples
+
+``` fennel
+(local l (list* 1 2 3 [4 5]))
+(assert-eq [1 2 3 4 5] l)
+```
+
 ## `map`
 Function signature:
 
@@ -710,6 +729,15 @@ Function signature:
 
 Return a sequence of last `n` elements of the `coll`.
 
+## `take-nth`
+Function signature:
+
+```
+(take-nth n coll)
+```
+
+Return a lazy sequence of every `n` item in `coll`.
+
 ## `take-while`
 Function signature:
 
@@ -780,5 +808,5 @@ Copyright (C) 2021 Andrey Listopadov
 License: [MIT](https://gitlab.com/andreyorst/lazy-seq/-/raw/master/LICENSE)
 
 
-<!-- Generated with Fenneldoc v0.1.9-dev
+<!-- Generated with Fenneldoc v0.1.8
      https://gitlab.com/andreyorst/fenneldoc -->

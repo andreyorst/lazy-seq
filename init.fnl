@@ -307,6 +307,29 @@ See `lazy-seq` macro from init-macros.fnl for more convenient usage."
       (set l (cons (. args i) l)))
     l))
 
+(fn spread [arglist]
+  (let [arglist (seq arglist)]
+    (if (= nil arglist) nil
+        (= nil (next arglist)) (seq (first arglist))
+        :else (cons (first arglist) (spread (next arglist))))))
+
+(fn list* [...]
+  "Creates a new sequence containing the items prepended to the rest,
+the last of which will be treated as a sequence.
+
+# Examples
+
+``` fennel
+(local l (list* 1 2 3 [4 5]))
+(assert-eq [1 2 3 4 5] l)
+```"
+  (match (values (select "#" ...) ...)
+    (1 ?args) (seq ?args)
+    (2 ?a ?args) (cons ?a (seq ?args))
+    (3 ?a ?b ?args) (cons ?a (cons ?b (seq ?args)))
+    (4 ?a ?b ?c ?args) (cons ?a (cons ?b (cons ?c (seq ?args))))
+    _ (spread (list ...))))
+
 (fn kind [t]
   ;; A best effor at getting a kind of a given table.  Kind here means
   ;; if a table is an assotiatice, sequential or empty. Also applies
@@ -947,6 +970,7 @@ corresponding `vals`."
  : empty?                              ; tested
  : lazy-seq                            ; tested
  : list                                ; tested
+ : list*                               ; tested
  : every?                              ; tested
  : some?                               ; tested
  : pack                                ; tested
