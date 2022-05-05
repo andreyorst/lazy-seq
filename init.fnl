@@ -983,7 +983,7 @@ corresponding `vals`."
  : take                                ; tested
  : take-while                          ; tested
  : take-last                           ; tested
- : take-nth                            ; TODO: test
+ : take-nth                            ; tested
  : drop                                ; tested
  : drop-while                          ; tested
  : drop-last                           ; tested

@@ -210,7 +210,7 @@
     (testing "take-while"
       (assert-eq [1 2 3] (->vec (take-while #(< $ 4) [1 2 3 4])))
       (assert-eq [1 2 3] (->vec (take-while #(< $ 4) (list 1 2 3 4)))))
-    (testing "take is lazy"
+    (testing "take-while is lazy"
       (let [se []
             s (take-while #(< $ 4) (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
         (assert-eq se [])
@@ -225,6 +225,23 @@
       (assert-eq [2 3 4] (->vec (take-last 3 (list 1 2 3 4))))
       (assert-eq [1 2 3 4] (->vec (take-last 10 (list 1 2 3 4))))
       (assert-eq nil (take-last 0 [1 2 3 4])))))
+
+
+(deftest take-nth-test
+  (let [{: take-nth : list : lazy-seq} suit]
+    (testing "take-nth"
+      (assert-eq (->vec (take-nth 2 [1 2 3 4 5])) [1 3 5])
+      (assert-eq (->vec (take-nth 1 [1 2 3 4 5])) [1 2 3 4 5])
+      (assert-eq (->vec (take-nth 3 (list 1 2 3 4 5 6))) [1 4])
+      (assert-eq [] (->vec (take-nth)))
+      (assert-eq [] (->vec (take-nth nil)))
+      (assert-ne (pcall take-nth nil nil)))
+    (testing "take-nth is lazy"
+      (let [se []
+            s (take-nth 2 (lazy-seq #(do (table.insert se 1) [1 2 3 4 5])))]
+        (assert-eq se [])
+        (assert-eq [1 3 5] (->vec s))
+        (assert-eq se [1])))))
 
 
 (deftest drop-test
