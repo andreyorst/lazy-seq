@@ -1097,6 +1097,6 @@ called. Early termination is supported via `reduced`.
  : keys                                 ; tested
  : vals                                 ; tested
  : zipmap                               ; tested
- : reduce
- : reduced
+ : reduce                               ; tested
+ : reduced                              ; tested
  }
