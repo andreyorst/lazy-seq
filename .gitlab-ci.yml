@@ -44,7 +44,9 @@ Lua:
         - tail luacov.report
     artifacts:
         reports:
-            cobertura: coverage/cobertura-coverage.xml
+            coverage_report:
+                coverage_format: cobertura
+                path: coverage/cobertura-coverage.xml
     coverage: '/Total.*\s(\d+.\d+%)$/'
 
 # Luajit actually is an impostor in Alpine, as the package actually
