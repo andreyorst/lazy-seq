@@ -201,14 +201,22 @@ If the sequence is empty, returns nil."
           (first s))
       nil))
 
-(fn cons [...]
+(fn cons [head tail]
   "Construct a cons cell.
-Second element must be either a table or a sequence, or nil."
-  (let [(h t) ...
-        tp (gettype t)]
+Prepends new `head' to a `tail', which must be either a table,
+sequence, or nil.
+
+# Examples
+
+``` fennel
+(assert-eq [0 1] (cons 0 [1]))
+(assert-eq (list 0 1 2 3) (cons 0 (cons 1 (list 2 3))))
+```"
+  :fnl/arglist [head tail]
+  (let [tp (gettype tail)]
     (assert (. allowed-types tp)
             (: "expected nil, cons, table, or string as a tail, got: %s" :format tp))
-    (setmetatable [] {:__call #(if $2 h (match t s s nil empty-cons))
+    (setmetatable [] {:__call #(if $2 head (match tail s s nil empty-cons))
                       :__lazy-seq/type :cons
                       :__index cons-index
                       :__newindex cons-newindex
@@ -459,16 +467,18 @@ Lua `#` operator on `rev` takes linar time.  If `t` is empty returns
 
 (fn map [f ...]
   "Map function `f` over every element of a collection `col`.
-Returns lazy sequence.
+`f` should accept as many arguments as there are collections supplied to `map`.
+Returns a lazy sequence.
 
 # Examples
 
 ```fennel
 (map #(+ $ 1) [1 2 3]) ;; => @seq(2 3 4)
+(map #(+ $1 $2) [1 2 3] [4 5 6]) ;; => @seq(5 7 9)
 (local res (map #(+ $ 1) [:a :b :c])) ;; will raise an error only when realized
 ```"
   (match (select "#" ...)
-    0 nil
+    0 nil                               ; TODO: transducers?
     1 (let [(col) ...]
         (lazy-seq #(match (seq col)
                      x (cons (f (first x)) (map f (seq (rest x))))
@@ -958,61 +968,135 @@ corresponding `vals`."
      (seq keys) (seq vals))
     t))
 
-{: first                               ; tested
- : rest                                ; tested
- : nthrest                             ; tested
- : next                                ; tested
- : nthnext                             ; tested
- : cons                                ; tested
- : seq                                 ; tested
- : rseq                                ; tested
- : seq?                                ; tested
- : empty?                              ; tested
- : lazy-seq                            ; tested
- : list                                ; tested
- : list*                               ; tested
- : every?                              ; tested
- : some?                               ; tested
- : pack                                ; tested
- : unpack                              ; tested
- : count                               ; tested
- : concat                              ; tested
- : map                                 ; tested
- : map-indexed                         ; tested
- : mapcat                              ; tested
- : take                                ; tested
- : take-while                          ; tested
- : take-last                           ; tested
- : take-nth                            ; tested
- : drop                                ; tested
- : drop-while                          ; tested
- : drop-last                           ; tested
- : remove                              ; tested
- : split-at                            ; tested
- : split-with                          ; tested
- : partition                           ; tested
- : partition-by                        ; tested
- : partition-all                       ; tested
- : filter                              ; tested
- : keep                                ; tested
- : keep-indexed                        ; tested
- : contains?                           ; tested
- : distinct                            ; tested
- : cycle                               ; tested
- : repeat                              ; tested
- : repeatedly                          ; tested
- : reductions                          ; tested
- : iterate                             ; tested
- : range                               ; tested
- : realized?                           ; tested
- : dorun                               ; tested
- : doall                               ; tested
- : line-seq                            ; tested
- : tree-seq                            ; tested
- : reverse                             ; tested
- : interleave                          ; tested
- : interpose                           ; tested
- : keys                                ; tested
- : vals                                ; tested
- : zipmap                              ; tested
+(local reduced-mt {})       ; singleton for detecting `reduced' values
+
+(fn reduced [value]
+  "Terminates the `reduce` early with a given `value`.
+
+# Examples
+
+``` fennel
+(assert-eq :NaN
+           (reduce (fn [acc x]
+                     (if (not= :number (type x))
+                         (reduced :NaN)
+                         (+ acc x)))
+                   [1 2 :3 4 5]))
+```"
+  (setmetatable {: value} reduced-mt))
+
+(fn reduce [f ...]
+  {:fnl/arglist [([f coll]) ([f val coll])]
+   :fnl/docstring "`f` should be a function of 2 arguments. If `val` is not supplied,
+returns the result of applying `f` to the first 2 items in `coll`,
+then applying `f` to that result and the 3rd item, etc. If `coll`
+contains no items, f must accept no arguments as well, and reduce
+returns the result of calling `f` with no arguments.  If `coll` has
+only 1 item, it is returned and `f` is not called.  If `val` is
+supplied, returns the result of applying `f` to `val` and the first
+item in `coll`, then applying `f` to that result and the 2nd item,
+etc. If `coll` contains no items, returns `val` and `f` is not
+called. Early termination is supported via `reduced`.
+
+# Examples
+
+``` fennel
+(fn add [...]
+  \"Addition function with multiple arities.\"
+  (match (values (select \"#\" ...) ...)
+    (0) 0
+    (1 ?a) ?a
+    (2 ?a ?b) (+ ?a ?b)
+    (3 ?a ?b) (add (+ ?a ?b) (select 3 ...))))
+;; no initial value
+(assert-eq 10 (reduce add [1 2 3 4]))
+;; initial value
+(assert-eq 10 (reduce add 1 [2 3 4]))
+;; empty collection - function is called with 0 args
+(assert-eq 0 (reduce add []))
+(assert-eq 10.3 (reduce math.floor 10.3 []))
+;; collection with a single element doesn't call a function unless the
+;; initial value is supplied
+(assert-eq 10.3 (reduce math.floor [10.3]))
+(assert-eq 7 (reduce add 3 [4]))
+```"}
+  (match (values (select "#" ...) ...)
+    0 (error "expected a collection")
+    (1 ?coll)
+    (match (count ?coll)
+      0 (f)
+      1 (first ?coll)
+      _ (reduce f (first ?coll) (rest ?coll)))
+    (2 ?val ?coll)
+    (match (seq ?coll)
+      coll (do (var done? false)
+               (accumulate [res ?val
+                            _ v (pairs coll)
+                            :until done?]
+                 (let [res (f res v)]
+                   (if (rawequal (getmetatable res) reduced-mt)
+                       (do (set done? true)
+                           res.value)
+                       res))))
+      _ ?val)))
+
+{: first                                ; tested
+ : rest                                 ; tested
+ : nthrest                              ; tested
+ : next                                 ; tested
+ : nthnext                              ; tested
+ : cons                                 ; tested
+ : seq                                  ; tested
+ : rseq                                 ; tested
+ : seq?                                 ; tested
+ : empty?                               ; tested
+ : lazy-seq                             ; tested
+ : list                                 ; tested
+ : list*                                ; tested
+ : every?                               ; tested
+ : some?                                ; tested
+ : pack                                 ; tested
+ : unpack                               ; tested
+ : count                                ; tested
+ : concat                               ; tested
+ : map                                  ; tested
+ : map-indexed                          ; tested
+ : mapcat                               ; tested
+ : take                                 ; tested
+ : take-while                           ; tested
+ : take-last                            ; tested
+ : take-nth                             ; tested
+ : drop                                 ; tested
+ : drop-while                           ; tested
+ : drop-last                            ; tested
+ : remove                               ; tested
+ : split-at                             ; tested
+ : split-with                           ; tested
+ : partition                            ; tested
+ : partition-by                         ; tested
+ : partition-all                        ; tested
+ : filter                               ; tested
+ : keep                                 ; tested
+ : keep-indexed                         ; tested
+ : contains?                            ; tested
+ : distinct                             ; tested
+ : cycle                                ; tested
+ : repeat                               ; tested
+ : repeatedly                           ; tested
+ : reductions                           ; tested
+ : iterate                              ; tested
+ : range                                ; tested
+ : realized?                            ; tested
+ : dorun                                ; tested
+ : doall                                ; tested
+ : line-seq                             ; tested
+ : tree-seq                             ; tested
+ : reverse                              ; tested
+ : interleave                           ; tested
+ : interpose                            ; tested
+ : keys                                 ; tested
+ : vals                                 ; tested
+ : zipmap                               ; tested
+ : reduce
+ : reduced
  }
