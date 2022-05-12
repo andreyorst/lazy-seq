@@ -60,6 +60,8 @@ and `lazy-cat`.  These macros are provided for convenience only.
 - [`partition-all`](#partition-all)
 - [`partition-by`](#partition-by)
 - [`range`](#range)
+- [`reduce`](#reduce)
+- [`reduced`](#reduced)
 - [`reductions`](#reductions)
 - [`remove`](#remove)
 - [`repeat`](#repeat)
@@ -82,11 +84,18 @@ and `lazy-cat`.  These macros are provided for convenience only.
 Function signature:
 
 ```
-(cons ...)
+(cons head tail)
 ```
 
 Construct a cons cell.
-Second element must be either a table or a sequence, or nil.
+Prepends new `head` to a `tail`, which must be either a table, sequence, or nil.
+
+### Examples
+
+``` fennel
+(assert-eq [0 1] (cons 0 [1]))
+(assert-eq (list 0 1 2 3) (cons 0 (cons 1 (list 2 3))))
+```
 
 ## `first`
 Function signature:
@@ -478,12 +487,14 @@ Function signature:
 ```
 
 Map function `f` over every element of a collection `col`.
-Returns lazy sequence.
+`f` should accept as many arguments as there are collections supplied to `map`.
+Returns a lazy sequence.
 
 ### Examples
 
 ```fennel
 (map #(+ $ 1) [1 2 3]) ;; => @seq(2 3 4)
+(map #(+ $1 $2) [1 2 3] [4 5 6]) ;; => @seq(5 7 9)
 (local res (map #(+ $ 1) [:a :b :c])) ;; will raise an error only when realized
 ```
 
@@ -584,6 +595,67 @@ Various ranges:
 (range 4 8) ;; => @seq(4 5 6 7)
 (range 0 -5 -2) ;; => @seq(0 -2 -4)
 (take 10 (range)) ;; => @seq(0 1 2 3 4 5 6 7 8 9)
+```
+
+## `reduce`
+Function signature:
+
+```
+(reduce ([f coll]) ([f val coll]))
+```
+
+`f` should be a function of 2 arguments. If `val` is not supplied,
+returns the result of applying `f` to the first 2 items in `coll`,
+then applying `f` to that result and the 3rd item, etc. If `coll`
+contains no items, f must accept no arguments as well, and reduce
+returns the result of calling `f` with no arguments.  If `coll` has
+only 1 item, it is returned and `f` is not called.  If `val` is
+supplied, returns the result of applying `f` to `val` and the first
+item in `coll`, then applying `f` to that result and the 2nd item,
+etc. If `coll` contains no items, returns `val` and `f` is not
+called. Early termination is supported via `reduced`.
+
+### Examples
+
+``` fennel
+(fn add [...]
+  "Addition function with multiple arities."
+  (match (values (select "#" ...) ...)
+    (0) 0
+    (1 ?a) ?a
+    (2 ?a ?b) (+ ?a ?b)
+    (3 ?a ?b) (add (+ ?a ?b) (select 3 ...))))
+;; no initial value
+(assert-eq 10 (reduce add [1 2 3 4]))
+;; initial value
+(assert-eq 10 (reduce add 1 [2 3 4]))
+;; empty collection - function is called with 0 args
+(assert-eq 0 (reduce add []))
+(assert-eq 10.3 (reduce math.floor 10.3 []))
+;; collection with a single element doesn't call a function unless the
+;; initial value is supplied
+(assert-eq 10.3 (reduce math.floor [10.3]))
+(assert-eq 7 (reduce add 3 [4]))
+```
+
+## `reduced`
+Function signature:
+
+```
+(reduced value)
+```
+
+Terminates the `reduce` early with a given `value`.
+
+### Examples
+
+``` fennel
+(assert-eq :NaN
+           (reduce (fn [acc x]
+                     (if (not= :number (type x))
+                         (reduced :NaN)
+                         (+ acc x)))
+                   [1 2 :3 4 5]))
 ```
 
 ## `reductions`

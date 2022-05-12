@@ -884,3 +884,52 @@
       (assert-not (pcall rseq {:a 1 :b 2}))
       (assert-not (pcall rseq (rseq [1 2 3])))
       (assert-not (pcall rseq 42)))))
+
+(deftest reduce-test
+  (let [{: reduce : reduced : range} suit
+        add (fn add [...]
+              "Addition function with multiple arities."
+              (match (values (select "#" ...) ...)
+                (0) 0
+                (1 ?a) ?a
+                (2 ?a ?b) (+ ?a ?b)
+                (3 ?a ?b) (add (+ ?a ?b) (select 3 ...))))]
+    (testing "reduced"
+      (assert-eq 1 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) [1]))
+      (assert-eq 3 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) [1 2]))
+      (assert-eq 10 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) [1 2 3 4]))
+      (assert-eq 15 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) [1 2 3 4 5]))
+      (assert-eq -1 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) [1 2 3 4 5 6]))
+      (assert-eq 11 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) 10 [1]))
+      (assert-eq -1 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) 10 [1 2]))
+      (assert-eq 15 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) 0 [10 5]))
+      (assert-eq -1 (reduce #(if (> $1 10) (reduced -1) (+ $1 $2)) 1 [10 7]))
+      (assert-eq false (reduce #(if (> $1 10) (reduced false) (+ $1 $2)) 1 [10 7]))
+      (assert-eq nil (reduce #(if (> $1 10) (reduced nil) (+ $1 $2)) 1 [10 7])))
+    (testing "reduce"
+      (assert-is (reduce #(match (select :# $...) 0 true _ false) []))
+      (assert-eq 10 (reduce #(+ $1 $2) [1 2 3 4]))
+      (assert-eq 10 (reduce #(+ $1 $2) 1 [2 3 4]))
+      (assert-eq 10.3 (reduce math.floor 10.3 []))
+      (assert-eq 10.3 (reduce math.floor [10.3]))
+      (assert-eq 7 (reduce #(+ $1 $2) 3 [4]))
+      (assert-eq 0 (reduce add []))
+      (assert-eq 1 (reduce add [1]))
+      (assert-eq 3 (reduce add [1 2]))
+      (assert-eq 45 (reduce add (range 10)))
+      (assert-eq 42 (reduce add -3 (range 10)))
+      (assert-eq 10 (reduce add 10 []))
+      (assert-eq 11 (reduce add 10 [1]))
+      (assert-eq 10 (reduce add 10 nil))
+      (assert-not (pcall reduce add))
+      (assert-not (pcall reduce)))
+    (testing "reduce reference implementation"
+      (let [mapping (fn mapping [f]
+                      (fn [reducing]
+                        (fn [result input]
+                          (reducing result (f input)))))
+            -reduce (fn -reduce [f init [x & tbl]]
+                      (if x (-reduce f (f init x) tbl) init))]
+        (assert-eq (-reduce add 0 (range 10)) (reduce add (range 10)))
+        (assert-eq (-reduce ((mapping #(+ 1 $)) add) 0 (range 10))
+                   (reduce ((mapping #(+ 1 $)) add) 0 (range 10)))))))

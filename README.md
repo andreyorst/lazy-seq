@@ -8,6 +8,8 @@ Clone this library to your project:
 
     git clone https://gitlab.com/andreyorst/lazy-seq.git
 
+Requires Fennel 1.1.0 or higher.
+
 ## Rationale
 
 Iterators in Lua can be considered lazy, however these are not really a data type.
