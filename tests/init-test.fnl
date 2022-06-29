@@ -880,7 +880,7 @@
     (testing "rseq returns nil on empty tables"
       (assert-eq nil (rseq [])))
     (testing "rseq works on sparse tables"
-      (assert-eq (list 5 nil nil nil 4 3 2 1) (rseq [1 2 3 4 nil nil nil 5 nil])))
+      (assert-eq (list 5 nil nil nil 4 3 2 1) (rseq [1 2 3 4 nil nil nil 5])))
     (testing "rseq doesn't work with anything but a sequential table"
       (assert-not (pcall rseq "foo"))
       (assert-not (pcall rseq {:a 1 :b 2}))
