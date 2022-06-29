@@ -872,13 +872,15 @@
 
 
 (deftest rseq-test
-  (let [{: rseq : reverse} suit]
+  (let [{: rseq : reverse : list} suit]
     (testing "rseq"
       (assert-eq [3 2 1] (->vec (rseq [1 2 3])))
       (let [v [:a :b :c]]
         (assert-eq (reverse v) (rseq v))))
     (testing "rseq returns nil on empty tables"
       (assert-eq nil (rseq [])))
+    (testing "rseq works on sparse tables"
+      (assert-eq (list 5 nil nil nil 4 3 2 1) (rseq [1 2 3 4 nil nil nil 5 nil])))
     (testing "rseq doesn't work with anything but a sequential table"
       (assert-not (pcall rseq "foo"))
       (assert-not (pcall rseq {:a 1 :b 2}))

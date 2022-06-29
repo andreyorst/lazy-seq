@@ -20,8 +20,9 @@
 (fn rev-ipairs [t]
   (values (fn next [t i]
             (let [i (- i 1)]
-              (match (. t i)
-                v (values i v))))
+              (match i
+                0 nil
+                _ (values i (. t i)))))
           t
           (+ 1 (length t))))
 
